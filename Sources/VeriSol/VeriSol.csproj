@@ -31,6 +31,7 @@
     <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
     <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
     <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
+    <ProjectReference Include="..\SpecToBoogie\SpecToBoogie.csproj" />
   </ItemGroup>
 
   <ItemGroup>

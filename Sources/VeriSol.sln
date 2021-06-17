@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExternalToolsManager", "Ext
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidityAnalysis", "SolidityAnalysis\SolidityAnalysis.csproj", "{9177A69B-7FDE-48DC-9A2C-22AAB5ED3768}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecToBoogie", "SpecToBoogie\SpecToBoogie.csproj", "{42FC4D49-41F4-4AF6-AB53-B8A30917A535}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +127,18 @@ Global
 		{9177A69B-7FDE-48DC-9A2C-22AAB5ED3768}.Release|x64.Build.0 = Release|Any CPU
 		{9177A69B-7FDE-48DC-9A2C-22AAB5ED3768}.Release|x86.ActiveCfg = Release|Any CPU
 		{9177A69B-7FDE-48DC-9A2C-22AAB5ED3768}.Release|x86.Build.0 = Release|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Debug|x64.Build.0 = Debug|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Debug|x86.Build.0 = Debug|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Release|x64.ActiveCfg = Release|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Release|x64.Build.0 = Release|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Release|x86.ActiveCfg = Release|Any CPU
+		{42FC4D49-41F4-4AF6-AB53-B8A30917A535}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

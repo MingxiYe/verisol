@@ -17,7 +17,7 @@ namespace SolToBoogie
     public class BoogieTranslator
     {
             // set of method@contract pairs whose translatin is skipped
-        public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods, TranslatorFlags _translatorFlags = null, String entryPointContract = "")
+        public BoogieAST Translate(AST solidityAST, HashSet<Tuple<string, string>> ignoredMethods, List<ProgramInstrumenter> instrumenters, TranslatorFlags _translatorFlags = null, String entryPointContract = "")
         {
             bool generateInlineAttributesInBpl = _translatorFlags.GenerateInlineAttributes;
 
@@ -120,6 +120,11 @@ namespace SolToBoogie
             {
                 ERC20SpecGenerator specGen = new ERC20SpecGenerator(context, solidityAST, entryPointContract);
                 specGen.GenerateSpec();
+            }
+
+            foreach (ProgramInstrumenter instrumenter in instrumenters)
+            {
+                instrumenter.instrument(context);
             }
 
             return new BoogieAST(context.Program);
