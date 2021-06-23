@@ -1,9 +1,9 @@
 pragma solidity ^0.5.0;
 
-// If I bid amount X and I am not the highest bidder, I will get my money back 
-// #LTLVariables: address L, int X
+// If I bid amount V and I am not the highest bidder, I will get my money back 
+// #LTLVariables: address L, int V
 // #LTLFairness: <>(started(Auction.withdraw, closed == true && L == msg.sender && L != winner))
-// #LTLProperty: [](finished(Auction.bid, msg.value == X && msg.sender == L) ==> <>(started(send(from, to, amt), to == L && amt == X))) 
+// #LTLProperty: [](finished(Auction.bid, msg.value == V && msg.sender == L) ==> <>(started(send(from, to, amt), to == L && amt == V))) 
 
 contract Auction {
   address payable[] private bidders;
