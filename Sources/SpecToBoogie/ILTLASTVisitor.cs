@@ -19,6 +19,7 @@ namespace SpecToBoogie
         bool Visit(Index ind);
         bool Visit(ArgList argList);
         bool Visit(Function fn);
+        bool Visit(Fsum fn);
         
         void EndVisit(VarDeclList declList);
         void EndVisit(TypeInfo info);
@@ -37,5 +38,6 @@ namespace SpecToBoogie
         void EndVisit(Index ind);
         void EndVisit(ArgList argList);
         void EndVisit(Function fn);
+        void EndVisit(Fsum fn);
     }
 }

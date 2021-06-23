@@ -14,10 +14,10 @@ type        : IDENTIFIER
 
 smartltl    : atom 
             | '(' smartltl ')'
-            | smartltl  T_BIN  smartltl  
-            | T_UN smartltl 
-            | smartltl L_BIN smartltl 
             | L_UN smartltl
+            | T_UN smartltl 
+            | smartltl  T_BIN  smartltl  
+            | smartltl L_BIN smartltl 
             ;
                
 atom        : ATOM_LOC '(' atomFn ',' constraint ')'
@@ -41,16 +41,17 @@ params      : ident
 
 constraint  : varOrNum
             | '(' constraint ')'
-            | constraint A1_BIN constraint
             | A_UN constraint
+            | L_UN constraint
+            | constraint A1_BIN constraint
             | constraint A2_BIN constraint
             | constraint C_BIN constraint
             | constraint L_BIN constraint
-            | L_UN constraint
             | fnCall
             ;
 
-fnCall      : fnName '(' argList ')'
+fnCall      : 'fsum' '(' atomFn ',' varAccess ',' constraint ')'
+            | fnName '(' argList ')'
             ;
             
 fnName      : ident '.' ident
@@ -86,11 +87,11 @@ varAccess   : ident
 
 ATOM_LOC   : ('finished' | 'started' | 'reverted' | 'willSucceed') ;
 
-IDENTIFIER : [a-zA-Z_][a-zA-Z_0-9]* ;
-
 T_BIN      : (';' | 'U' | 'R' | '==>') ;
 
 T_UN       : ('[]' | '<>' | 'X') ;
+
+IDENTIFIER : [a-zA-Z_][a-zA-Z_0-9]* ;
 
 A1_BIN     : ('*' | '/') ;
 

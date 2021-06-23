@@ -533,7 +533,7 @@ namespace SpecToBoogie
         {
             if (context.ChildCount == 1)
             {
-                string[] contractlessFns = new[] {"address", "fsum", "csum"};
+                string[] contractlessFns = new[] {"address", "csum"};
                 String fnName = context.GetChild(0).GetText();
 
                 if (!contractlessFns.Contains(fnName))
@@ -604,18 +604,28 @@ namespace SpecToBoogie
         
         public override SmartLTLNode VisitFnCall(SmartLTLParser.FnCallContext context)
         {
-            if (context.ChildCount != 4)
+            if (context.ChildCount == 4)
             {
-                throw new Exception("Translation Error");
+                SmartLTLNode identNode = this.Visit(context.GetChild(0));
+                SmartLTLNode argNode = this.Visit(context.GetChild(2));
+
+                if (identNode is FunctionIdent ident && argNode is ArgList args)
+                {
+                    string contractName = ident.contract == null ? null : ident.contract.Name;
+                    return new Function(ident, args, FindExprFunction(contractName, ident.fnName, args));
+                }
             }
-
-            SmartLTLNode identNode = this.Visit(context.GetChild(0));
-            SmartLTLNode argNode = this.Visit(context.GetChild(2));
-
-            if (identNode is FunctionIdent ident && argNode is ArgList args)
+            else if (context.ChildCount == 8)
             {
-                string contractName = ident.contract == null ? null : ident.contract.Name;
-                return new Function(ident, args, FindExprFunction(contractName, ident.fnName, args));
+                String fnName = context.GetChild(0).GetText();
+                SmartLTLNode fnNode = this.Visit(context.GetChild(2));
+                SmartLTLNode sumVarNode = this.Visit(context.GetChild(4));
+                SmartLTLNode constraintNode = this.Visit(context.GetChild(6));
+
+                if (fnName == "fsum" && fnNode is FunctionDef fn && sumVarNode is Expr sumVar && constraintNode is Expr constraint)
+                {
+                    return new Fsum(fn, sumVar, constraint);
+                }
             }
 
             throw new Exception("Translation Error");
@@ -834,7 +844,7 @@ namespace SpecToBoogie
 
             if (decl == null)
             {
-                throw new Exception("Could not find the declaration");
+                throw new Exception($"Could not find the declaration for {name}");
             }
 
             Variable refVar = new Variable(name, decl.Id, decl.TypeDescriptions);

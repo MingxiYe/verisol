@@ -44,6 +44,8 @@ namespace SpecToBoogie
         public virtual bool Visit(ArgList argList) { return CommonVisit(argList); }
 
         public virtual bool Visit(Function fn) { return CommonVisit(fn); }
+        
+        public virtual bool Visit(Fsum fn) { return CommonVisit(fn); }
 
         public virtual void EndVisit(VarDeclList declList) { CommonEndVisit(declList); }
 
@@ -78,5 +80,7 @@ namespace SpecToBoogie
         public virtual void EndVisit(ArgList argList) { CommonEndVisit(argList); }
 
         public virtual void EndVisit(Function fn) { CommonEndVisit(fn); }
+        
+        public virtual void EndVisit(Fsum fn) { CommonEndVisit(fn); }
     }
 }

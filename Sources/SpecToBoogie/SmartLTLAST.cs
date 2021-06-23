@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Numerics;
 using System.Text;
 using SolidityAST;
@@ -781,6 +782,56 @@ namespace SpecToBoogie
         }
     }
 
+    public class Fsum : Expr
+    {
+        private static int curId = 0;
+        public FunctionDef tgtFn { get; }
+        public Expr sumExpr { get; }
+        public Expr constraint { get; }
+        
+        public string name { get; }
+
+        public Fsum(FunctionDef tgtFn, Expr sumExpr, Expr constraint)
+        {
+            this.tgtFn = tgtFn;
+            this.sumExpr = sumExpr;
+            this.constraint = constraint;
+            this.name = $"{tgtFn.ident.fnName}_fsum{curId}";
+            curId++;
+        }
+        
+        public override string ToString()
+        {
+            return $"fsum({tgtFn}, {sumExpr}, {constraint})";
+        }
+
+        public Expression ToSolidityAST()
+        {
+            Identifier ident = new Identifier();
+            ident.Name = name;
+            ident.ReferencedDeclaration = SmartLTLReader.UNKNOWN_ID;
+            ident.TypeDescriptions = TypeInfo.GetElementaryType("uint").description;
+            return ident;
+        }
+
+        public TypeDescription GetType(TranslatorContext ctxt)
+        {
+            return TypeInfo.GetElementaryType("uint").description;
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                tgtFn.Accept(visitor);
+                sumExpr.Accept(visitor);
+                constraint.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
+    }
+    
     public class Function : Expr
     {
         public FunctionIdent ident { get; }
