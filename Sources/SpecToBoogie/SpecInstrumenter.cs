@@ -1,5 +1,6 @@
 using System;
 using System.Text.RegularExpressions;
+using BoogieAST;
 using SolToBoogie;
 
 namespace SpecToBoogie

@@ -626,6 +626,24 @@ namespace BoogieAST
                 BigBlocks[0].AddStatement(cmd);
             }
         }
+        
+        public void PrependStmtList(BoogieStmtList stmtList)
+        {
+            Debug.Assert(stmtList.BigBlocks.Count == 1);
+            foreach (BoogieCmd cmd in stmtList.BigBlocks[0].SimpleCmds)
+            {
+                BigBlocks[0].PrependStatement(cmd);
+            }
+        }
+        
+        public void InsertStmtList(int ind, BoogieStmtList stmtList)
+        {
+            Debug.Assert(stmtList.BigBlocks.Count == 1);
+            for (int i = stmtList.BigBlocks[0].SimpleCmds.Count - 1; i >= 0; i--)
+            {
+                BigBlocks[0].InsertStatement(ind, stmtList.BigBlocks[0].SimpleCmds[i]);
+            }
+        }
 
         public override string ToString()
         {
@@ -652,6 +670,17 @@ namespace BoogieAST
         public void AddStatement(BoogieCmd statement)
         {
             SimpleCmds.Add(statement);
+        }
+        
+        public void PrependStatement(BoogieCmd statement)
+        {
+            SimpleCmds.Insert(0, statement);
+        }
+        
+        public void InsertStatement(int ind, BoogieCmd statement)
+        {
+            Debug.Assert(ind >= 0 && ind <= SimpleCmds.Count);
+            SimpleCmds.Insert(ind, statement);
         }
 
         public override string ToString()

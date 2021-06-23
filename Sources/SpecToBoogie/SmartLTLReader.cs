@@ -151,7 +151,7 @@ namespace SpecToBoogie
 
         public FunctionDefinition GetImplicitAtomFunctionDefinition(string name, Params p)
         {
-            if (name.Equals("transfer") && (p == null || p.paramList.Count == 3))
+            if (name.Equals("send") && (p == null || p.paramList.Count == 3))
             {
                 FunctionDefinition fnDef = new FunctionDefinition();
                 fnDef.Name = name;
@@ -321,8 +321,8 @@ namespace SpecToBoogie
                     atomLoc = AtomLoc.WILL_SUCCEED;
                     break;
                 case "sent":
-                    FunctionIdent ident = new FunctionIdent(null, "transfer");
-                    FunctionDefinition fnDef = GetImplicitAtomFunctionDefinition("transfer", null);
+                    FunctionIdent ident = new FunctionIdent(null, "send");
+                    FunctionDefinition fnDef = GetImplicitAtomFunctionDefinition("send", null);
                     if (fnDef == null)
                     {
                         throw new Exception("Could not find function for sent");
@@ -500,9 +500,9 @@ namespace SpecToBoogie
                     throw new Exception($"Only {String.Join(", ",contractlessFns)} may be provided without a contract");
                 }
 
-                if (fnName.Equals("send"))
+                if (fnName.Equals("transfer"))
                 {
-                    fnName = "transfer";
+                    fnName = "send";
                 }
 
                 return new FunctionIdent(null, fnName);
@@ -569,9 +569,6 @@ namespace SpecToBoogie
         
         public override SmartLTLNode VisitAtomFn(SmartLTLParser.AtomFnContext context)
         {
-            
-            Console.WriteLine("atom: " + context.GetText());
-
             if (context.ChildCount == 1)
             {
                 SmartLTLNode identNode;
@@ -626,7 +623,6 @@ namespace SpecToBoogie
         
         public override SmartLTLNode VisitArgList(SmartLTLParser.ArgListContext context)
         {
-            Console.WriteLine("arglist: " + context.GetText());
             List<Expr> args = new List<Expr>();
             foreach(IParseTree tree in context.children)
             {
@@ -718,8 +714,6 @@ namespace SpecToBoogie
         
         public override SmartLTLNode VisitConstraint(SmartLTLParser.ConstraintContext context)
         {
-            Console.WriteLine("Constraint: " + context.GetText());
-
             if (context.ChildCount == 1)
             {
                 return this.Visit(context.GetChild(0));
@@ -760,8 +754,6 @@ namespace SpecToBoogie
         
         public override SmartLTLNode VisitParams(SmartLTLParser.ParamsContext context)
         {
-            Console.WriteLine("params: " + context.GetText());
-            
             if (context.ChildCount == 1)
             {
                 string name = context.GetChild(0).GetText();
@@ -795,6 +787,18 @@ namespace SpecToBoogie
                     msgDecl.TypeDescriptions.TypeString = "msg";
                     msgDecl.Id = UNKNOWN_ID;
                     return msgDecl;
+                case "this":
+                    String contractName = transCtxt.EntryPointContract;
+                    if (curFn.ident.contract != null)
+                    {
+                        contractName = curFn.ident.contract.Name;
+                    }
+                    
+                    VariableDeclaration thisDecl = new VariableDeclaration();
+                    thisDecl.TypeDescriptions =
+                        TypeInfo.GetContractType(transCtxt, contractName).description;
+                    thisDecl.Id = UNKNOWN_ID;
+                    return thisDecl;
             }
 
             return null;

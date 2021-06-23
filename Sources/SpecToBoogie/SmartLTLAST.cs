@@ -108,7 +108,8 @@ namespace SpecToBoogie
             UserDefinedTypeName contractType = new UserDefinedTypeName();
             contractType.Name = $"contract {name}";
             contractType.ReferencedDeclaration = def.Id;
-            contractType.TypeDescriptions = TransUtils.TypeNameToTypeDescription(contractType);
+            contractType.TypeDescriptions = new TypeDescription();
+            contractType.TypeDescriptions.TypeString = $"contract {name}";
             return new TypeInfo(contractType, contractType.TypeDescriptions);
         }
     }
