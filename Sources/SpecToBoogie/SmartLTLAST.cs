@@ -16,7 +16,7 @@ namespace SpecToBoogie
     }
     public interface SmartLTLNode
     {
-        
+        void Accept(ILTLASTVisitor visitor);
     }
 
     public interface Expr: SmartLTLNode
@@ -69,6 +69,19 @@ namespace SpecToBoogie
 
             return null;
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                foreach (VariableDecl decl in decls)
+                {
+                    decl.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class TypeInfo : SmartLTLNode
@@ -112,6 +125,12 @@ namespace SpecToBoogie
             contractType.TypeDescriptions.TypeString = $"contract {name}";
             return new TypeInfo(contractType, contractType.TypeDescriptions);
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
+        }
     }
 
     public class VariableDecl : SmartLTLNode
@@ -147,6 +166,16 @@ namespace SpecToBoogie
             varDecl.Id = id;
             return varDecl;
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                type.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class TempBinOp : TempExpr
@@ -166,6 +195,17 @@ namespace SpecToBoogie
         {
             return $"({lhs} {op} {rhs})";
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                lhs.Accept(visitor);
+                rhs.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class TempUnOp : TempExpr
@@ -182,6 +222,16 @@ namespace SpecToBoogie
         public override string ToString()
         {
             return $"{op}({expr})";
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                expr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -229,6 +279,17 @@ namespace SpecToBoogie
 
             return builder.ToString();
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                tgtFn.Accept(visitor);
+                constraint.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class FunctionIdent : SmartLTLNode
@@ -249,6 +310,12 @@ namespace SpecToBoogie
             }
             
             return $"{contract.Name}.{fnName}";
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
         }
     }
 
@@ -300,6 +367,17 @@ namespace SpecToBoogie
             
             return null;
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                ident.Accept(visitor);
+                paramList.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class Params : SmartLTLNode
@@ -326,6 +404,12 @@ namespace SpecToBoogie
             }
 
             return builder.ToString();
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
         }
     }
 
@@ -361,6 +445,17 @@ namespace SpecToBoogie
         public TypeDescription GetType(TranslatorContext ctxt)
         {
             return resultDesc;
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                lhs.Accept(visitor);
+                rhs.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -404,6 +499,16 @@ namespace SpecToBoogie
         {
             return litType.description;
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                litType.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
     
     public class UnaryOp : Expr
@@ -433,6 +538,16 @@ namespace SpecToBoogie
         public TypeDescription GetType(TranslatorContext ctxt)
         {
             return expr.GetType(ctxt);
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                expr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -467,6 +582,12 @@ namespace SpecToBoogie
         public override string ToString()
         {
             return name;
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
         }
     }
 
@@ -566,6 +687,16 @@ namespace SpecToBoogie
             }
             throw new Exception($"Could not find member {memberName} for {baseExpr}");
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                baseExpr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class Index : Expr
@@ -596,6 +727,17 @@ namespace SpecToBoogie
         {
             return MapArrayHelper.InferValueTypeDescriptionFromTypeString(baseExpr.GetType(ctxt).TypeString);
         }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                baseExpr.Accept(visitor);
+                indexExpr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class ArgList : SmartLTLNode
@@ -623,6 +765,19 @@ namespace SpecToBoogie
             }
 
             return builder.ToString();
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                foreach (Expr arg in args)
+                {
+                    arg.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -663,6 +818,17 @@ namespace SpecToBoogie
         public TypeDescription GetType(TranslatorContext ctxt)
         {
             return def.ReturnParameters.Parameters[0].TypeDescriptions;
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                ident.Accept(visitor);
+                args.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 }
