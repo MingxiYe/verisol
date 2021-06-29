@@ -67,6 +67,8 @@ namespace SolToBoogie
         
         public bool NoTxnsFromContract { get; set; }
         
+        public bool SpecToBoogie { get; set; }
+        
         public bool NoCustomTypes { get; set; }
         
         public bool CreateMainHarness { get; set; }

@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Antlr4.CodeGenerator" Version="4.6.6" />
+      <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Antlr4 Include="SmartLTL.g4">
+            <Generator>MSBuild:Compile</Generator>
+            <CustomToolNamespace>SpecToBoogie</CustomToolNamespace>
+            <Listener>True</Listener>
+            <Visitor>True</Visitor>
+        </Antlr4>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\BoogieAST\BoogieAST.csproj" />
+        <ProjectReference Include="..\SolidityAST\SolidityAST.csproj" />
+        <ProjectReference Include="..\SolidityAnalysis\SolidityAnalysis.csproj" />
+        <ProjectReference Include="..\SolToBoogie\SolToBoogie.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="obj\Debug\netcoreapp2.2\SmartLTL.tokens" />
+      <Content Include="obj\Debug\netcoreapp2.2\SmartLTLLexer.tokens" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="obj\Debug\netcoreapp2.2\SmartLTLBaseListener.cs" />
+      <Compile Include="obj\Debug\netcoreapp2.2\SmartLTLBaseVisitor.cs" />
+      <Compile Include="obj\Debug\netcoreapp2.2\SmartLTLLexer.cs" />
+      <Compile Include="obj\Debug\netcoreapp2.2\SmartLTLListener.cs" />
+      <Compile Include="obj\Debug\netcoreapp2.2\SmartLTLParser.cs" />
+      <Compile Include="obj\Debug\netcoreapp2.2\SmartLTLVisitor.cs" />
+    </ItemGroup>
+
+    <!-- Use this if you don't want to depend on the Java tool -->
+    <PropertyGroup>
+        <Antlr4UseCSharpGenerator>True</Antlr4UseCSharpGenerator>
+    </PropertyGroup>
+
+</Project>

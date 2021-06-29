@@ -1,5 +1,7 @@
 ﻿
 
+using SpecToBoogie;
+
 namespace VeriSolRunner
 {
 
@@ -368,11 +370,18 @@ namespace VeriSolRunner
             AST solidityAST = new AST(compilerOutput, Path.GetDirectoryName(SolidityFilePath));
 
             // translate Solidity to Boogie
-            try
-            {
+            //try
+            //{
                 BoogieTranslator translator = new BoogieTranslator();
                 Console.WriteLine($"... running SolToBoogie to translate Solidity to Boogie");
-                BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, translatorFlags, ContractName);
+                
+                List<ProgramInstrumenter> instrumenters = new List<ProgramInstrumenter>();
+                if (translatorFlags.SpecToBoogie)
+                {
+                    instrumenters.Add(new SpecInstrumenter(SolidityFilePath));
+                }
+                
+                BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, instrumenters, translatorFlags, ContractName);
 
                 // dump the Boogie program to a file
                 var outFilePath = Path.Combine(SolidityFileDir, outFileName);
@@ -380,12 +389,13 @@ namespace VeriSolRunner
                 {
                     outWriter.WriteLine(boogieAST.GetRoot());
                 }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"VeriSol translation error: {e.Message}");
-                return false;
-            }
+            //}
+            //catch (Exception e)
+            //{
+                //Console.WriteLine($"VeriSol translation error: {e.Message}");
+            //    throw e;
+            //    return false;
+            //}
             return true;
         }
 

@@ -187,9 +187,41 @@ namespace SolToBoogie
             }
         }
 
+        public static TypeDescription InferValueTypeDescriptionFromTypeString(string typeString)
+        {
+            TypeDescription desc = new TypeDescription();
+            
+            if (mappingRegex.IsMatch(typeString))
+            {
+                Match match = mappingRegex.Match(typeString);
+                desc.TypeString = match.Groups[2].Value;
+            }
+            else if (arrayRegex.IsMatch(typeString))
+            {
+                Match match = arrayRegex.Match(typeString);
+                desc.TypeString = match.Groups[1].Value;
+            }
+            else if (typeString == "bytes calldata")
+            {
+                desc.TypeString = "address";
+            }
+            else if (typeString.StartsWith("bytes") && !typeString.Equals("bytes"))
+            {
+                desc.TypeString = "uint";
+            }
+            else
+            {
+                throw new SystemException($"Unknown type string during InferValueTypeFromTypeString: {typeString}");
+            }
+
+            return desc;
+        }
+        
         public static BoogieType InferValueTypeFromTypeString(string typeString)
         {
-            if (mappingRegex.IsMatch(typeString))
+            TypeDescription valType = InferValueTypeDescriptionFromTypeString(typeString);
+            return InferExprTypeFromTypeString(valType.TypeString);
+            /*if (mappingRegex.IsMatch(typeString))
             {
                 Match match = mappingRegex.Match(typeString);
                 return InferExprTypeFromTypeString(match.Groups[2].Value);
@@ -210,7 +242,7 @@ namespace SolToBoogie
             else
             {
                 throw new SystemException($"Unknown type string during InferValueTypeFromTypeString: {typeString}");
-            }
+            }*/
         }
 
         public static string GetValueTypeString(string typeString)

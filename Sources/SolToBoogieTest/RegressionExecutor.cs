@@ -186,7 +186,7 @@ namespace SolToBoogieTest
                     ParseTranslatorFlags(translatorFlags, corralConfig.TranslatorOptions);
                 }
                 
-                BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>(), translatorFlags);
+                BoogieAST boogieAST = translator.Translate(solidityAST, new HashSet<Tuple<string, string>>(), new List<ProgramInstrumenter>(), translatorFlags);
 
                 // dump the Boogie program to a file
                 using (var outWriter = new StreamWriter(outFile))

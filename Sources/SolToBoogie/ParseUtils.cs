@@ -229,6 +229,11 @@ namespace SolToBoogie
                 translatorFlags.AssemblyAsHavoc = true;
             }
 
+            if (args.Any(x => x.Equals("/specToBoogie")))
+            {
+                translatorFlags.SpecToBoogie = true;
+            }
+
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 
             // don't perform verification for some of these omitFlags

@@ -1,5 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
+
+using System.Runtime.CompilerServices;
+
 namespace BoogieAST
 {
     using System;
@@ -26,6 +29,7 @@ namespace BoogieAST
 
     public abstract class BoogieASTNode
     {
+        public abstract void Accept(IBoogieASTVisitor visitor);
     }
 
     public abstract class BoogieDeclaration : BoogieASTNode
@@ -55,6 +59,19 @@ namespace BoogieAST
                 builder.Append(declaration);
             }
             return builder.ToString();
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                foreach (BoogieDeclaration decl in Declarations)
+                {
+                    decl.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -92,6 +109,22 @@ namespace BoogieAST
             }
             
             return builder.ToString();
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (BoogieAttribute attribute in Attributes)
+                    {
+                        attribute.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -153,6 +186,12 @@ namespace BoogieAST
             }
             builder.Append("}");
             return builder.ToString();
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
         }
     }
 
@@ -248,6 +287,61 @@ namespace BoogieAST
             postConditions.AddRange(posts);
         }
 
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attribute in Attributes)
+                    {
+                        attribute.Accept(visitor);
+                    }
+                }
+
+                if (ModSet != null)
+                {
+                    foreach (var mod in ModSet)
+                    {
+                        mod.Accept(visitor);
+                    }
+                }
+
+                if (InParams != null)
+                {
+                    foreach (var param in InParams)
+                    {
+                        param.Accept(visitor);
+                    }
+                }
+
+                if (OutParams != null)
+                {
+                    foreach (var rets in OutParams)
+                    {
+                        rets.Accept(visitor);
+                    }
+                }
+
+                if (preConditions != null)
+                {
+                    foreach (var preCond in preConditions)
+                    {
+                        preCond.Accept(visitor);
+                    }
+                }
+
+                if (postConditions != null)
+                {
+                    foreach (var postCond in postConditions)
+                    {
+                        postCond.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieFunction : BoogieDeclWithFormals
@@ -295,6 +389,45 @@ namespace BoogieAST
             return builder.ToString();
         }
 
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attribute in Attributes)
+                    {
+                        attribute.Accept(visitor);
+                    }
+                }
+
+                if (ModSet != null)
+                {
+                    foreach (var mod in ModSet)
+                    {
+                        mod.Accept(visitor);
+                    }
+                }
+
+                if (InParams != null)
+                {
+                    foreach (var param in InParams)
+                    {
+                        param.Accept(visitor);
+                    }
+                }
+
+                if (OutParams != null)
+                {
+                    foreach (var rets in OutParams)
+                    {
+                        rets.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieAxiom : BoogieDeclaration
@@ -308,6 +441,24 @@ namespace BoogieAST
         public override string ToString()
         {
             return $"\naxiom({BExpr.ToString()});\n";
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                BExpr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -370,6 +521,56 @@ namespace BoogieAST
             builder.AppendLine("}").AppendLine();
             return builder.ToString();
         }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attribute in Attributes)
+                    {
+                        attribute.Accept(visitor);
+                    }
+                }
+
+                if (ModSet != null)
+                {
+                    foreach (var mod in ModSet)
+                    {
+                        mod.Accept(visitor);
+                    }
+                }
+
+                if (InParams != null)
+                {
+                    foreach (var param in InParams)
+                    {
+                        param.Accept(visitor);
+                    }
+                }
+
+                if (OutParams != null)
+                {
+                    foreach (var rets in OutParams)
+                    {
+                        rets.Accept(visitor);
+                    }
+                }
+
+                if (LocalVars != null)
+                {
+                    foreach (var localVar in LocalVars)
+                    {
+                        localVar.Accept(visitor);
+                    }
+                }
+
+                StructuredStmts.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public abstract class BoogieType : BoogieASTNode
@@ -420,6 +621,12 @@ namespace BoogieAST
             }
             return false;
         }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieCtorType : BoogieType
@@ -448,6 +655,12 @@ namespace BoogieAST
                 return Name.Equals(ctorType.Name);
             }
             return false;
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
         }
     }
 
@@ -484,6 +697,21 @@ namespace BoogieAST
             builder.Append(Result);
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                foreach (var argType in Arguments)
+                {
+                    argType.Accept(visitor);
+                }
+                
+                Result.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieTypedIdent : BoogieASTNode
@@ -503,6 +731,16 @@ namespace BoogieAST
             StringBuilder builder = new StringBuilder();
             builder.Append(Name).Append(": ").Append(Type);
             return builder.ToString();
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                Type.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -545,6 +783,24 @@ namespace BoogieAST
             builder.Append(TypedIdent).AppendLine(";");
             return builder.ToString();
         }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                TypedIdent.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieGlobalVariable : BoogieVariable
@@ -569,6 +825,24 @@ namespace BoogieAST
             builder.Append(TypedIdent).AppendLine(";");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                TypedIdent.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieLocalVariable : BoogieVariable
@@ -578,6 +852,24 @@ namespace BoogieAST
             this.TypedIdent = typedIdent;
             this.Name = typedIdent.Name;
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                TypedIdent.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieFormalParam : BoogieVariable
@@ -586,6 +878,24 @@ namespace BoogieAST
         {
             this.TypedIdent = typedIdent;
             this.Name = typedIdent.Name;
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                TypedIdent.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -626,6 +936,24 @@ namespace BoogieAST
                 BigBlocks[0].AddStatement(cmd);
             }
         }
+        
+        public void PrependStmtList(BoogieStmtList stmtList)
+        {
+            Debug.Assert(stmtList.BigBlocks.Count == 1);
+            foreach (BoogieCmd cmd in stmtList.BigBlocks[0].SimpleCmds)
+            {
+                BigBlocks[0].PrependStatement(cmd);
+            }
+        }
+        
+        public void InsertStmtList(int ind, BoogieStmtList stmtList)
+        {
+            Debug.Assert(stmtList.BigBlocks.Count == 1);
+            for (int i = stmtList.BigBlocks[0].SimpleCmds.Count - 1; i >= 0; i--)
+            {
+                BigBlocks[0].InsertStatement(ind, stmtList.BigBlocks[0].SimpleCmds[i]);
+            }
+        }
 
         public override string ToString()
         {
@@ -635,6 +963,19 @@ namespace BoogieAST
                 builder.Append(bigBlock);
             }
             return builder.ToString();
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                foreach (var blk in BigBlocks)
+                {
+                    blk.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -653,6 +994,17 @@ namespace BoogieAST
         {
             SimpleCmds.Add(statement);
         }
+        
+        public void PrependStatement(BoogieCmd statement)
+        {
+            SimpleCmds.Insert(0, statement);
+        }
+        
+        public void InsertStatement(int ind, BoogieCmd statement)
+        {
+            Debug.Assert(ind >= 0 && ind <= SimpleCmds.Count);
+            SimpleCmds.Insert(ind, statement);
+        }
 
         public override string ToString()
         {
@@ -662,6 +1014,19 @@ namespace BoogieAST
                 builder.Append(cmd);
             }
             return builder.ToString();
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                foreach (var cmds in SimpleCmds)
+                {
+                    cmds.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -687,6 +1052,25 @@ namespace BoogieAST
             StringBuilder builder = new StringBuilder();
             builder.Append(Lhs).Append(" := ").Append(Rhs).AppendLine(";");
             return builder.ToString();
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                Lhs.Accept(visitor);
+                Rhs.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -739,6 +1123,38 @@ namespace BoogieAST
             builder.AppendLine(");");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                if (Ins != null)
+                {
+                    foreach (var inExpr in Ins)
+                    {
+                        inExpr.Accept(visitor);
+                    }
+                }
+
+                if (Outs != null)
+                {
+                    foreach (var outExpr in Outs)
+                    {
+                        outExpr.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public abstract class BoogiePredicateCmd : BoogieCmd
@@ -768,6 +1184,24 @@ namespace BoogieAST
             builder.Append("(").Append(Expr).AppendLine(");");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                Expr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieAssumeCmd : BoogiePredicateCmd
@@ -782,6 +1216,24 @@ namespace BoogieAST
             StringBuilder builder = new StringBuilder();
             builder.Append("assume (").Append(Expr).AppendLine(");");
             return builder.ToString();
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                Expr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -798,6 +1250,24 @@ namespace BoogieAST
             builder.Append("invariant ").Append(Expr).AppendLine(";");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                Expr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public abstract class BoogieTransferCmd : BoogieCmd
@@ -810,6 +1280,22 @@ namespace BoogieAST
         public override string ToString()
         {
             return "return;" + Environment.NewLine;
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -828,6 +1314,24 @@ namespace BoogieAST
             StringBuilder builder = new StringBuilder();
             builder.Append("return ").Append(Expr).AppendLine(";");
             return builder.ToString();
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                Expr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -862,6 +1366,22 @@ namespace BoogieAST
             builder.AppendLine(";");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieHavocCmd : BoogieCmd
@@ -891,6 +1411,27 @@ namespace BoogieAST
             builder.AppendLine(";");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                foreach (var havocd in Vars)
+                {
+                    havocd.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieSkipCmd : BoogieCmd
@@ -913,6 +1454,22 @@ namespace BoogieAST
             builder.AppendLine();
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieCommentCmd : BoogieCmd
@@ -930,6 +1487,22 @@ namespace BoogieAST
             builder.Append("// ").AppendLine(Comment);
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public abstract class BoogieStructuredCmd : BoogieCmd
@@ -941,6 +1514,12 @@ namespace BoogieAST
         public override string ToString()
         {
             return "*";
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
         }
     }
 
@@ -978,6 +1557,30 @@ namespace BoogieAST
                 builder.Append(ElseBody).AppendLine("}");
             }
             return builder.ToString();
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                Guard.Accept(visitor);
+                ThenBody.Accept(visitor);
+
+                if (ElseBody != null)
+                {
+                    ElseBody.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -1022,6 +1625,33 @@ namespace BoogieAST
             builder.AppendLine("}");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+
+                if (Invariants != null)
+                {
+                    foreach (var inv in Invariants)
+                    {
+                        inv.Accept(visitor);
+                    }
+                }
+
+                Guard.Accept(visitor);
+                Body.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieBreakCmd : BoogieStructuredCmd
@@ -1044,9 +1674,25 @@ namespace BoogieAST
             builder.AppendLine(";");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
-    public class BoogieExpr : BoogieASTNode
+    public abstract class BoogieExpr : BoogieASTNode
     {
     }
 
@@ -1075,6 +1721,12 @@ namespace BoogieAST
                 return Val.ToString();
             }
         }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieIdentifierExpr : BoogieExpr
@@ -1089,6 +1741,12 @@ namespace BoogieAST
         public override string ToString()
         {
             return Name;
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            visitor.Visit(this);
+            visitor.EndVisit(this);
         }
     }
 
@@ -1124,6 +1782,21 @@ namespace BoogieAST
             builder.Length -= 2;
             builder.Append("]");
             return builder.ToString();
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                BaseExpr.Accept(visitor);
+                
+                foreach (var arg in Arguments)
+                {
+                    arg.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -1165,6 +1838,23 @@ namespace BoogieAST
             builder.Append(Value + "]");
             return builder.ToString();
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                BaseExpr.Accept(visitor);
+                
+                foreach (var arg in Arguments)
+                {
+                    arg.Accept(visitor);
+                }
+                
+                Value.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
 
@@ -1205,6 +1895,16 @@ namespace BoogieAST
             StringBuilder builder = new StringBuilder();
             builder.Append(OpcodeToString(Op)).Append("(").Append(Expr).Append(")");
             return builder.ToString();
+        }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                Expr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -1292,6 +1992,17 @@ namespace BoogieAST
                     throw new SystemException($"Unknown opcode: {op}");
             }
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                Lhs.Accept(visitor);
+                Rhs.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieITE : BoogieExpr
@@ -1316,6 +2027,18 @@ namespace BoogieAST
             builder.Append(" then (").Append(ThenExpr);
             builder.Append(") else (").Append(ElseExpr).Append(")");
             return builder.ToString();
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                this.Guard.Accept(visitor);
+                this.ThenExpr.Accept(visitor);
+                this.ElseExpr.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
@@ -1353,6 +2076,30 @@ namespace BoogieAST
                 triggerString = "{" + string.Join(", ", Trigger.Select(x => x.ToString())) + "}";
             return $"{quantifierString} {qVarsString} :: {triggerString} ({BodyExpr.ToString()})"; 
         }
+
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                for (int i = 0; i < QVars.Count; i++)
+                {
+                    QVarTypes[i].Accept(visitor);
+                    QVars[i].Accept(visitor);
+                }
+                
+                BodyExpr.Accept(visitor);
+
+                if (Trigger != null)
+                {
+                    foreach (var trigger in Trigger)
+                    {
+                        trigger.Accept(visitor);
+                    }
+                }
+            }
+
+            visitor.EndVisit(this);
+        }
     }
 
     public class BoogieFuncCallExpr : BoogieExpr
@@ -1372,6 +2119,19 @@ namespace BoogieAST
             var argString = string.Join(", ", Arguments.Select(x => x.ToString()));
             return $"{Function}({argString})";
         }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                foreach (var arg in Arguments)
+                {
+                    arg.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
     }
     public class BoogieTupleExpr : BoogieExpr
     {
@@ -1386,6 +2146,19 @@ namespace BoogieAST
         {
             var argString = string.Join(", ", Arguments.Select(x => x.ToString()));
             return $"({argString})";
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                foreach (var arg in Arguments)
+                {
+                    arg.Accept(visitor);
+                }
+            }
+            
+            visitor.EndVisit(this);
         }
     }
 
