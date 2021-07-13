@@ -1046,5 +1046,15 @@ namespace SolToBoogie
             
             throw new Exception("Unknown type name");
         }
+        
+        public static string GetContractName(TypeDescription typeDescription)
+        {
+            if (typeDescription.IsContract())
+            {
+                return typeDescription.TypeString.Substring(typeDescription.TypeString.IndexOf(' ') + 1);
+            }
+
+            return null;
+        }
     }
 }
