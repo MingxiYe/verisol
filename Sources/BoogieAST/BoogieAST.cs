@@ -51,6 +51,11 @@ namespace BoogieAST
             Declarations.Add(declaration);
         }
 
+        public void InsertDeclaration(int index, BoogieDeclaration declaration)
+        {
+            Declarations.Insert(index, declaration);
+        }
+
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
@@ -926,6 +931,11 @@ namespace BoogieAST
         {
             Debug.Assert(BigBlocks.Count == 1);
             BigBlocks[0].AddStatement(cmd);
+        }
+        public void PrependStatement(BoogieCmd cmd)
+        {
+            Debug.Assert(BigBlocks.Count == 1);
+            BigBlocks[0].PrependStatement(cmd);
         }
 
         public void AppendStmtList(BoogieStmtList stmtList)

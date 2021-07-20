@@ -286,7 +286,10 @@ namespace SpecToBoogie
             if (visitor.Visit(this))
             {
                 tgtFn.Accept(visitor);
-                constraint.Accept(visitor);
+                if (constraint != null)
+                {
+                    constraint.Accept(visitor);
+                }
             }
             
             visitor.EndVisit(this);
@@ -371,6 +374,7 @@ namespace SpecToBoogie
 
         public void Accept(ILTLASTVisitor visitor)
         {
+            if (paramList == null) return;
             if (visitor.Visit(this))
             {
                 ident.Accept(visitor);
