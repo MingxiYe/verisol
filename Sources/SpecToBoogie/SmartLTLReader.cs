@@ -293,6 +293,35 @@ namespace SpecToBoogie
 
                 return fnDef;
             }
+            if (name.Equals("old") && args.args.Count == 1)
+            {
+                FunctionDefinition fnDef = new FunctionDefinition();
+                fnDef.Name = name;
+                fnDef.Parameters = new ParameterList();
+                fnDef.Parameters.Parameters = new List<VariableDeclaration>();
+                fnDef.Payable = true;
+
+                VariableDeclaration argDecl = new VariableDeclaration(); 
+                argDecl.Name = "arg";
+                argDecl.Id = UNKNOWN_ID;
+
+                fnDef.Parameters.Parameters.Add(argDecl);
+                
+                fnDef.ReturnParameters = new ParameterList();
+                fnDef.ReturnParameters.Parameters = new List<VariableDeclaration>();
+
+                TypeDescription desc = args.args[0].GetType(transCtxt);
+                
+                VariableDeclaration retDecl = new VariableDeclaration();
+                retDecl.Name = "ret";
+                retDecl.TypeName = null;
+                retDecl.TypeDescriptions = desc;
+                retDecl.Id = UNKNOWN_ID;
+
+                fnDef.ReturnParameters.Parameters.Add(retDecl);
+
+                return fnDef;
+            }
 
             return null;
         }
@@ -533,7 +562,7 @@ namespace SpecToBoogie
         {
             if (context.ChildCount == 1)
             {
-                string[] contractlessFns = new[] {"address", "csum"};
+                string[] contractlessFns = new[] {"address", "csum", "old"};
                 String fnName = context.GetChild(0).GetText();
 
                 if (!contractlessFns.Contains(fnName))

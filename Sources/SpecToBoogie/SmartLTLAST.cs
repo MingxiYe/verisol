@@ -661,6 +661,18 @@ namespace SpecToBoogie
                 }
                 else if (var.name.Equals("this"))
                 {
+                    ContractDefinition def = ctxt.GetContractByName(TransUtils.GetContractName(var.typeDesc));
+                    if (def == null)
+                    {
+                        throw new Exception($"Could not find the definition of ${var.typeDesc.TypeString}");
+                    }
+
+                    VariableDeclaration decl = ctxt.GetStateVarByDynamicType(memberName, def);
+                    if (decl != null)
+                    {
+                        return decl.TypeDescriptions;
+                    }
+                    
                     if (memberName.Equals("balance"))
                     {
                         memberType.TypeString = "uint";
