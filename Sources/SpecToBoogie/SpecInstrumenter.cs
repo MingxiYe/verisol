@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using BoogieAST;
 using SolToBoogie;
+using SolidityAST;
 
 namespace SpecToBoogie
 {
@@ -24,7 +25,7 @@ namespace SpecToBoogie
             string freeVars = null;
             string fairness = null;
             string property = null;
-            
+           
             foreach(string line in lines)
             {
                 char[] whitespace = { ' ', '\t'};
@@ -48,7 +49,7 @@ namespace SpecToBoogie
             {
                 throw new Exception($"Could not find specification in {specFile}");
             }
-            
+           
             SmartLTLReader reader = new SmartLTLReader(ctxt);
             if (freeVars != null)
             {
@@ -74,26 +75,60 @@ namespace SpecToBoogie
 
             int varID = 0;
             List<String> varNames = new List<String>();
+            HashSet<Tuple<ContractDefinition, FunctionDefinition>> functions = new HashSet<Tuple<ContractDefinition, FunctionDefinition>>();
             Dictionary<String, List<String>> startedVars = new Dictionary<string, List<string>>();
             Dictionary<String, List<String>> willSucceedVars = new Dictionary<string, List<string>>();
             Dictionary<String, List<String>> finishedVars = new Dictionary<string, List<string>>();
             Dictionary<String, List<String>> revertedVars = new Dictionary<string, List<string>>();
+           
+            //get a list of all (wildcard) functions
+            foreach(ContractDefinition def in ctxt.ContractDefinitions)
+            {
+                //Console.WriteLine(def);
+                foreach(FunctionDefinition fnDef in ctxt.GetVisibleFunctionsByContract(def))
+                {
+                   
+                    functions.Add(new Tuple<ContractDefinition, FunctionDefinition>(def, fnDef));
+                }
+            }
+
             foreach (Atom atom in varSearch.atomList)
             {
-                Console.WriteLine(atom);
+                //Console.WriteLine(atom);
                 String function = atom.tgtFn.def.Name;
-                String ident = atom.tgtFn.ident.contract.Name;
-                
+                String ident = (atom.tgtFn.ident.contract == null) ? null : atom.tgtFn.ident.contract.Name;
+
+                bool wildcard = function.Equals("*");
+
                 AtomLoc loc = atom.loc;
                 String functionName = function + "_" + ident;
-                String varName = loc.ToString().ToLower() + "_" + function + varID;
+                String varName = loc.ToString().ToLower() + "_" + (wildcard ? "wildcard" : function) + varID;
                 varID++;
-                    
+                
+                //Console.WriteLine("Ident: "+ ident +'\n');
+                //Console.WriteLine("function: "+ function +'\n');
                 varNames.Add(varName);
+                
+                
                 if (loc.Equals(AtomLoc.STARTED))
                 {
-                    if (!startedVars.ContainsKey(functionName)) startedVars.Add(functionName, new List<string>());
-                    startedVars[functionName].Add(varName);
+                    if (wildcard == true)
+                    {
+                        foreach (Tuple<ContractDefinition,FunctionDefinition> func in functions)
+                        {
+                            function = func.Item2.Name;
+                            ident = func.Item1.Name; //?
+                            functionName = function + "_" + ident;
+                            Console.WriteLine("Function Name: " + functionName + '\n');
+                            if (!startedVars.ContainsKey(functionName)) startedVars.Add(functionName, new List<string>());
+                            startedVars[functionName].Add(varName);
+                        }
+                    }
+                    else
+                    {
+                        if (!startedVars.ContainsKey(functionName)) startedVars.Add(functionName, new List<string>());
+                        startedVars[functionName].Add(varName);
+                    }
                 }
                 else if (loc.Equals(AtomLoc.WILL_SUCCEED))
                 {
@@ -125,7 +160,7 @@ namespace SpecToBoogie
                     break;
                 }
             }
-            
+           
             // started
             foreach (String functionName in startedVars.Keys)
             {
@@ -201,7 +236,7 @@ namespace SpecToBoogie
                 {
                     Console.Error.WriteLine("If not found for " + functionName);
                 }
-                
+               
                 foreach (String varName in willSucceedVars[functionName])
                 {
                     targetIf.ElseBody.PrependStatement(new BoogieAssignCmd(new BoogieIdentifierExpr(varName), new BoogieLiteralExpr(false)));
@@ -237,7 +272,7 @@ namespace SpecToBoogie
                 {
                     Console.Error.WriteLine("If not found for " + functionName);
                 }
-                
+               
                 foreach (String varName in finishedVars[functionName])
                 {
                     targetIf.ElseBody.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr(varName), new BoogieLiteralExpr(true)));
