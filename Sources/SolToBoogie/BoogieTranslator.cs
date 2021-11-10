@@ -92,6 +92,7 @@ namespace SolToBoogie
             // translate procedures
             ProcedureTranslator procTranslator = new ProcedureTranslator(context, mapHelper, generateInlineAttributesInBpl);
             sourceUnits.Accept(procTranslator);
+            context.procedureTranslator = procTranslator;
 
             // generate fallbacks
             FallbackGenerator fallbackGenerator = new FallbackGenerator(context);

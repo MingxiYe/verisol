@@ -117,6 +117,8 @@ namespace SolToBoogie
         // maps Contract C --> (source, dest), where source is a library type
         private readonly Dictionary<ContractDefinition, Dictionary<UserDefinedTypeName, List<TypeName>>> usingMap;
         
+        public ProcedureTranslator procedureTranslator { get; set; }
+        
         public HashSet<String> initFns { get; set; }
 
         public TranslatorContext(AST solidityAST, HashSet<Tuple<string, string>> ignoreMethods, bool _genInlineAttrInBpl, TranslatorFlags _translateFlags = null, String entryPointContract = "")

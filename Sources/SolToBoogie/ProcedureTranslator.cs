@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
+using System.Linq.Expressions;
 using Newtonsoft.Json.Linq;
 
 namespace SolToBoogie
@@ -2661,6 +2662,16 @@ namespace SolToBoogie
 
         public Dictionary<string, List<BoogieExpr>> ContractInvariants { get => contractInvariants;}
 
+        /*
+         * Meant to be called from outside procedure translator. So we first set up the state so that
+         * the boogie translation is not modified.
+         */
+        public BoogieExpr TranslateSolExpr(Expression expr)
+        {
+            this.currentStmtList = new BoogieStmtList();
+            return TranslateExpr(expr);
+        }
+        
         private BoogieExpr TranslateExpr(Expression expr)
         {
             currentExpr = null;
