@@ -798,6 +798,10 @@ namespace SolidityAST
         }
     }
 
+    public class UtilVariableDeclaration : VariableDeclaration
+    {
+    }
+
     [JsonConverter(typeof(JsonSubtypes), "NodeType")]
     [JsonSubtypes.KnownSubType(typeof(ElementaryTypeName), "ElementaryTypeName")]
     [JsonSubtypes.KnownSubType(typeof(UserDefinedTypeName), "UserDefinedTypeName")]
@@ -1773,6 +1777,28 @@ namespace SolidityAST
             StringBuilder builder = new StringBuilder();
             builder.Append(Expression).Append(".").Append(MemberName);
             return builder.ToString();
+        }
+    }
+
+    public class Sum : Expression
+    {
+        public Expression SumExpression { get; set; }
+
+        public int ReferencedId;
+
+        public override void Accept(IASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                SumExpression.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
+
+        public override T Accept<T>(IASTGenericVisitor<T> visitor)
+        {
+            return visitor.Visit(this);
         }
     }
 

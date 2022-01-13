@@ -50,5 +50,6 @@ namespace SolidityAST
         T Visit(NewExpression node);
         T Visit(MemberAccess node);
         T Visit(IndexAccess node);
+        T Visit(Sum node);
     }
 }

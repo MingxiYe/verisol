@@ -2662,14 +2662,21 @@ namespace SolToBoogie
 
         public Dictionary<string, List<BoogieExpr>> ContractInvariants { get => contractInvariants;}
 
+        public BoogieStmtList TranslateSolStmt(Statement stmt)
+        {
+            this.currentStmtList = new BoogieStmtList();
+            stmt.Accept(this);
+            return currentStmtList;
+        }
+        
         /*
          * Meant to be called from outside procedure translator. So we first set up the state so that
          * the boogie translation is not modified.
          */
-        public BoogieExpr TranslateSolExpr(Expression expr)
+        public Tuple<BoogieStmtList, BoogieExpr> TranslateSolExpr(Expression expr)
         {
             this.currentStmtList = new BoogieStmtList();
-            return TranslateExpr(expr);
+            return new Tuple<BoogieStmtList, BoogieExpr>(currentStmtList, TranslateExpr(expr));
         }
         
         private BoogieExpr TranslateExpr(Expression expr)
@@ -4307,6 +4314,14 @@ namespace SolToBoogie
             
             VeriSolAssert(false, "Unknown solidity type");
             return null;
+        }
+
+        public override bool Visit(Sum node)
+        {
+            BoogieExpr expr = TranslateExpr(node.SumExpression);
+            VariableDeclaration referencedDecl = context.IdToNodeMap[node.ReferencedId] as VariableDeclaration;
+            currentExpr = mapHelper.GetSumExpr(referencedDecl, expr);
+            return false;
         }
         
         public override bool Visit(IndexAccess node)

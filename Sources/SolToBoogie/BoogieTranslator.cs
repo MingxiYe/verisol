@@ -110,6 +110,11 @@ namespace SolToBoogie
                 RevertLogicGenerator reverGenerator = new RevertLogicGenerator(context);
                 reverGenerator.Generate();
             }
+            
+            foreach (ProgramInstrumenter instrumenter in instrumenters)
+            {
+                instrumenter.instrument(context, mapHelper);
+            }
 
             if (context.TranslateFlags.DoModSetAnalysis)
             {
@@ -121,11 +126,6 @@ namespace SolToBoogie
             {
                 ERC20SpecGenerator specGen = new ERC20SpecGenerator(context, solidityAST, entryPointContract);
                 specGen.GenerateSpec();
-            }
-
-            foreach (ProgramInstrumenter instrumenter in instrumenters)
-            {
-                instrumenter.instrument(context);
             }
 
             return new BoogieAST(context.Program);

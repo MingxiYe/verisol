@@ -435,6 +435,38 @@ namespace BoogieAST
         }
     }
 
+    public class BoogieCommentDeclaration : BoogieDeclaration
+    {
+        public string Comment { get; set; }
+
+        public BoogieCommentDeclaration(string comment)
+        {
+            this.Comment = comment;
+        }
+        
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("// ").AppendLine(Comment);
+            return builder.ToString();
+        }
+        
+        public override void Accept(IBoogieASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                if (Attributes != null)
+                {
+                    foreach (var attr in Attributes)
+                    {
+                        attr.Accept(visitor);
+                    }
+                }
+            }
+            
+            visitor.EndVisit(this);
+        }
+    }
     public class BoogieAxiom : BoogieDeclaration
     {
         BoogieExpr BExpr;

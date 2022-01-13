@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Diagnostics.SymbolStore;
+using System.IO.Compression;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
+using BoogieAST;
 using SolidityAST;
 using SolToBoogie;
 
@@ -29,6 +33,7 @@ namespace SpecToBoogie
 
     public interface TempExpr : SmartLTLNode
     {
+        string ToLTL();
     }
 
     public class VarDeclList : SmartLTLNode
@@ -155,7 +160,7 @@ namespace SpecToBoogie
         
         public VariableDeclaration toSolidityAST()
         {
-            VariableDeclaration varDecl = new VariableDeclaration();
+            UtilVariableDeclaration varDecl = new UtilVariableDeclaration();
             varDecl.Constant = false;
             varDecl.Indexed = false;
             varDecl.Name = name;
@@ -207,6 +212,11 @@ namespace SpecToBoogie
             
             visitor.EndVisit(this);
         }
+
+        public string ToLTL()
+        {
+            return $"({lhs.ToLTL()} {op} {rhs.ToLTL()})";
+        }
     }
 
     public class TempUnOp : TempExpr
@@ -234,6 +244,11 @@ namespace SpecToBoogie
             
             visitor.EndVisit(this);
         }
+
+        public string ToLTL()
+        {
+            return $"{op}({expr.ToLTL()})";
+        }
     }
 
     public class Atom : TempExpr
@@ -241,12 +256,13 @@ namespace SpecToBoogie
         public AtomLoc loc { get; }
         public FunctionDef tgtFn { get; }
         public Expr constraint { get; }
-
-        public Atom(AtomLoc loc, FunctionDef tgtFn, Expr constraint)
+        public string name { get; }
+        public Atom(AtomLoc loc, FunctionDef tgtFn, Expr constraint, string name)
         {
             this.loc = loc;
             this.tgtFn = tgtFn;
             this.constraint = constraint;
+            this.name = name;
         }
         
         public override string ToString()
@@ -293,6 +309,11 @@ namespace SpecToBoogie
             }
             
             visitor.EndVisit(this);
+        }
+        
+        public string ToLTL()
+        {
+            return $"{name}";
         }
     }
 
@@ -805,14 +826,19 @@ namespace SpecToBoogie
         public Expr sumExpr { get; }
         public Expr constraint { get; }
         
-        public string name { get; }
+        public VariableDeclaration varDecl { get; }
 
-        public Fsum(FunctionDef tgtFn, Expr sumExpr, Expr constraint)
+        public Fsum(FunctionDef tgtFn, Expr sumExpr, Expr constraint, VariableDeclaration decl)
         {
             this.tgtFn = tgtFn;
             this.sumExpr = sumExpr;
             this.constraint = constraint;
-            this.name = $"{tgtFn.ident.fnName}_fsum{curId}";
+            Literal zero = new Literal();
+            zero.Kind = "uint";
+            zero.Value = "0";
+            zero.HexValue = "0x0";
+            this.varDecl = decl;
+            varDecl.Value = zero;
             curId++;
         }
         
@@ -820,19 +846,42 @@ namespace SpecToBoogie
         {
             return $"fsum({tgtFn}, {sumExpr}, {constraint})";
         }
+        
+        public Statement GetAccExpr()
+        {
+            Identifier ident = new Identifier();
+            ident.Name = varDecl.Name;
+            ident.TypeDescriptions = varDecl.TypeDescriptions;
+            ident.ReferencedDeclaration = varDecl.Id;
+            
+            Assignment assignment = new Assignment();
+            assignment.Operator = "+=";
+            assignment.LeftHandSide = ident;
+            assignment.RightHandSide = sumExpr.ToSolidityAST();
+            
+            ExpressionStatement stmt = new ExpressionStatement();
+            stmt.Expression = assignment;
+
+            IfStatement ifStmt = new IfStatement();
+            ifStmt.Condition = constraint.ToSolidityAST();
+            ifStmt.FalseBody = null;
+            ifStmt.TrueBody = stmt;
+
+            return ifStmt;
+        }
 
         public Expression ToSolidityAST()
         {
             Identifier ident = new Identifier();
-            ident.Name = name;
-            ident.ReferencedDeclaration = SmartLTLReader.UNKNOWN_ID;
-            ident.TypeDescriptions = TypeInfo.GetElementaryType("uint").description;
+            ident.Name = varDecl.Name;
+            ident.ReferencedDeclaration = varDecl.Id;
+            ident.TypeDescriptions = varDecl.TypeDescriptions;
             return ident;
         }
 
         public TypeDescription GetType(TranslatorContext ctxt)
         {
-            return TypeInfo.GetElementaryType("uint").description;
+            return varDecl.TypeDescriptions;
         }
 
         public void Accept(ILTLASTVisitor visitor)
@@ -848,50 +897,123 @@ namespace SpecToBoogie
         }
     }
     
-    public class Function : Expr
+    public class Csum : Expr
     {
-        public FunctionIdent ident { get; }
-        public ArgList args { get; }
+        public Variable trackedVar { get; }
 
-        public FunctionDefinition def;
-        
-        public Function(FunctionIdent ident, ArgList args, FunctionDefinition fnDef)
+        public Csum(Variable trackedVar)
         {
-            this.ident = ident;
-            this.args = args;
-            this.def = fnDef;
+            this.trackedVar = trackedVar;
         }
-
+        
         public override string ToString()
         {
-            return $"{ident}({args})";
+            return $"csum({trackedVar.ToString()})";
         }
 
         public Expression ToSolidityAST()
         {
-            FunctionCall call = new FunctionCall();
-            call.Arguments = new List<Expression>();
-            foreach (Expr expr in args.args)
-            {
-                call.Arguments.Add(expr.ToSolidityAST());
-            }
+            /*throw new Exception("this translation is not right, need to add something to the solidity ast");
+            Identifier ident = new Identifier();
+            ident.Name = sumVar.Name;
+            ident.ReferencedDeclaration = sumVar.Id;
+            ident.TypeDescriptions = sumVar.TypeDescriptions;
+            return ident;*/
             
-            Identifier nameIdent = new Identifier();
-            nameIdent.Name = ident.fnName;
-            nameIdent.ReferencedDeclaration = def.Id;
-            return call;
+            Sum sum = new Sum();
+            sum.ReferencedId = trackedVar.id;
+            sum.SumExpression = trackedVar.ToSolidityAST();
+            return sum;
         }
 
         public TypeDescription GetType(TranslatorContext ctxt)
         {
-            return def.ReturnParameters.Parameters[0].TypeDescriptions;
+            return TypeInfo.GetElementaryType("uint").description;
         }
 
         public void Accept(ILTLASTVisitor visitor)
         {
             if (visitor.Visit(this))
             {
-                ident.Accept(visitor);
+                trackedVar.Accept(visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
+    }
+    
+    public class Function : Expr
+    {
+        public FunctionIdent fnIdent { get; }
+        public ArgList args { get; }
+
+        public FunctionDefinition def;
+        public VariableDeclaration retDecl { get; }
+        
+        public Function(FunctionIdent ident, ArgList args, FunctionDefinition fnDef, VariableDeclaration retDecl)
+        {
+            this.fnIdent = ident;
+            this.args = args;
+            this.def = fnDef;
+            this.retDecl = retDecl;
+        }
+
+        public override string ToString()
+        {
+            return $"{fnIdent}({args})";
+        }
+
+        public Expression GetCallExpr()
+        {
+            Identifier callIdent = new Identifier();
+            callIdent.Name = def.Name;
+            callIdent.ReferencedDeclaration = def.Id;
+            
+            FunctionCall call = new FunctionCall();
+            call.Arguments = new List<Expression>();
+            call.Kind = "functionCall";
+            foreach (Expr expr in args.args)
+            {
+                call.Arguments.Add(expr.ToSolidityAST());
+            }
+
+            call.Expression = callIdent;
+
+            call.Id = def.Id;
+            
+            Identifier ident = new Identifier();
+            ident.Name = retDecl.Name;
+            ident.ReferencedDeclaration = retDecl.Id;
+            ident.TypeDescriptions = retDecl.TypeDescriptions;
+            
+            Assignment assignment = new Assignment();
+            assignment.Operator = "=";
+            assignment.LeftHandSide = ident;
+            assignment.RightHandSide = call;
+            
+            return assignment;
+        }
+
+        public Expression ToSolidityAST()
+        {
+            Identifier nameIdent = new Identifier();
+            nameIdent.Name = retDecl.Name;
+            nameIdent.ReferencedDeclaration = retDecl.Id;
+            nameIdent.TypeDescriptions = retDecl.TypeDescriptions;
+
+            return nameIdent;
+        }
+
+        public TypeDescription GetType(TranslatorContext ctxt)
+        {
+            return retDecl.TypeDescriptions;
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                fnIdent.Accept(visitor);
                 args.Accept(visitor);
             }
             

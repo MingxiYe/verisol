@@ -446,14 +446,15 @@ namespace SolToBoogie
 
         public static string GetCanonicalLocalVariableName(VariableDeclaration varDecl, TranslatorContext context)
         {
-            if (context.TranslateFlags.RemoveScopeInVarName) return varDecl.Name; // not recommended
+            if (context.TranslateFlags.RemoveScopeInVarName || varDecl is UtilVariableDeclaration) return varDecl.Name; // not recommended
             return varDecl.Name + "_s" + varDecl.Scope.ToString();
         }
 
         public static string GetCanonicalStateVariableName(VariableDeclaration varDecl, TranslatorContext context)
         {
             Debug.Assert(varDecl.StateVariable, $"{varDecl.Name} is not a state variable");
-
+            if (varDecl is UtilVariableDeclaration) return varDecl.Name;
+            
             Dictionary<VariableDeclaration, ContractDefinition> varToContractMap = context.StateVarToContractMap;
             Debug.Assert(varToContractMap.ContainsKey(varDecl), $"Cannot find state variable: {varDecl.Name}");
             return varDecl.Name + "_" + varToContractMap[varDecl].Name;

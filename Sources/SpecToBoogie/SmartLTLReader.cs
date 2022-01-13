@@ -17,17 +17,15 @@ namespace SpecToBoogie
     {
         private TranslatorContext transCtxt;
         private FunctionDef curFn;
-        private VarDeclList freeVars;
+        private MapArrayHelper mapHelper;
+        public VarDeclList freeVars { get; set; }
         public static int UNKNOWN_ID = Int32.MinValue;
+        private static int varId = 0;
         
-        public SmartLTLReader(TranslatorContext solToBoogieContext)
+        public SmartLTLReader(TranslatorContext solToBoogieContext, MapArrayHelper mapHelper)
         {
             this.transCtxt = solToBoogieContext;
-        }
-
-        public void SetFreeVars(VarDeclList freeDecls)
-        {
-            this.freeVars = freeDecls;
+            this.mapHelper = mapHelper;
         }
 
         public VarDeclList ReadVars(string varString)
@@ -46,14 +44,20 @@ namespace SpecToBoogie
             throw new Exception("For some reason we didn't get a variable declaration list back");
         }
         
-        public SmartLTLNode ReadProperty(String propertyStr)
+        public TempExpr ReadProperty(String propertyStr)
         {
             AntlrInputStream input = new AntlrInputStream(propertyStr); 
             SmartLTLLexer lexer = new SmartLTLLexer(input);
             CommonTokenStream tokenStream = new CommonTokenStream(lexer);
             SmartLTLParser parser = new SmartLTLParser(tokenStream);
             SmartLTLParser.SmartltlContext ltlSpec = parser.smartltl();
-            return this.Visit(ltlSpec);
+            SmartLTLNode property = this.Visit(ltlSpec);
+            if (property is TempExpr tempExpr)
+            {
+                return tempExpr;
+            }
+            
+            throw new Exception("For some reason we didn't get a temporal expression list back");
         }
 
         public override SmartLTLNode VisitErrorNode(IErrorNode node)
@@ -161,23 +165,26 @@ namespace SpecToBoogie
                 TypeInfo addrType = TypeInfo.GetElementaryType("address");
                 TypeInfo uintType = TypeInfo.GetElementaryType("uint");
                 
-                VariableDeclaration fromDecl = new VariableDeclaration();
+                UtilVariableDeclaration fromDecl = new UtilVariableDeclaration();
                 fromDecl.Name = "from";
                 fromDecl.TypeName = addrType.name;
                 fromDecl.TypeDescriptions = addrType.description;
-                fromDecl.Id = UNKNOWN_ID;
+                fromDecl.Id = transCtxt.IdToNodeMap.Keys.Min() - 1;
+                transCtxt.IdToNodeMap.Add(fromDecl.Id, fromDecl);
                 
-                VariableDeclaration toDecl = new VariableDeclaration();
-                toDecl.Name = "from";
+                UtilVariableDeclaration toDecl = new UtilVariableDeclaration();
+                toDecl.Name = "to";
                 toDecl.TypeName = addrType.name;
                 toDecl.TypeDescriptions = addrType.description;
-                toDecl.Id = UNKNOWN_ID;
-                
-                VariableDeclaration amtDecl = new VariableDeclaration();
-                amtDecl.Name = "from";
+                toDecl.Id = transCtxt.IdToNodeMap.Keys.Min() - 1;
+                transCtxt.IdToNodeMap.Add(toDecl.Id, toDecl);
+
+                UtilVariableDeclaration amtDecl = new UtilVariableDeclaration();
+                amtDecl.Name = "amount";
                 amtDecl.TypeName = uintType.name;
                 amtDecl.TypeDescriptions = uintType.description;
-                amtDecl.Id = UNKNOWN_ID;
+                amtDecl.Id = transCtxt.IdToNodeMap.Keys.Min() - 1;
+                transCtxt.IdToNodeMap.Add(amtDecl.Id, amtDecl);
                 
                 fnDef.Parameters.Parameters.Add(fromDecl);
                 fnDef.Parameters.Parameters.Add(toDecl);
@@ -325,6 +332,15 @@ namespace SpecToBoogie
 
             return null;
         }
+
+        private string getAxiomVarName(AtomLoc loc, FunctionDef tgtFn)
+        {
+            String fnName = tgtFn.def.Name;
+            bool isWildcard = fnName.Equals("*");
+            String varName = loc.ToString().ToLower() + "_" + (isWildcard ? "wildcard" : fnName) + varId;
+            varId++;
+            return varName;
+        }
         
         public override SmartLTLNode VisitAtom(SmartLTLParser.AtomContext context)
         {
@@ -397,7 +413,7 @@ namespace SpecToBoogie
                 }
 
                 curFn = null;
-                return new Atom(atomLoc, tgtFn, constraint);
+                return new Atom(atomLoc, tgtFn, constraint, getAxiomVarName(atomLoc, tgtFn));
             }
             else
             {
@@ -405,7 +421,7 @@ namespace SpecToBoogie
                 SmartLTLNode constraintNode = this.Visit(context.GetChild(2));
                 if (constraintNode is Expr constraint)
                 {
-                    return new Atom(atomLoc, tgtFn, constraint);
+                    return new Atom(atomLoc, tgtFn, constraint, getAxiomVarName(atomLoc, tgtFn));
                 }
             }
             
@@ -536,7 +552,7 @@ namespace SpecToBoogie
 
                 return new FunctionIdent(null, fnName);
             }
-            else if (context.ChildCount == 3)
+            if (context.ChildCount == 3)
             {
                 String contractName = context.GetChild(0).GetText();
                 String fnName = context.GetChild(2).GetText();
@@ -641,7 +657,64 @@ namespace SpecToBoogie
                 if (identNode is FunctionIdent ident && argNode is ArgList args)
                 {
                     string contractName = ident.contract == null ? null : ident.contract.Name;
-                    return new Function(ident, args, FindExprFunction(contractName, ident.fnName, args));
+                    FunctionDefinition fnDef = FindExprFunction(contractName, ident.fnName, args);
+                    List<VariableDeclaration> retDecls = fnDef.ReturnParameters.Parameters;
+
+                    if (ident.contract == null && ident.fnName.Equals("csum"))
+                    {
+                        Variable var = args.args[0] as Variable;
+
+                        if (var == null)
+                        {
+                            throw new Exception("csum must take a variable as an argument");
+                        }
+
+                        /*VariableDeclaration varDecl = transCtxt.IdToNodeMap[var.id] as VariableDeclaration;
+
+                        if (varDecl == null)
+                        {
+                            throw new Exception($"Could not find a declaration for variable {var}");
+                        }
+
+                        string sumName = mapHelper.GetSumName(varDecl);
+                        UtilVariableDeclaration sumDecl = new UtilVariableDeclaration();
+                        sumDecl.Constant = false;
+                        sumDecl.Indexed = false;
+                        sumDecl.Name = sumName;
+                        sumDecl.Value = null;
+                        sumDecl.Visibility = EnumVisibility.DEFAULT;
+                        sumDecl.StateVariable = true;
+                        sumDecl.StorageLocation = EnumLocation.DEFAULT;
+                        TypeInfo uintType = TypeInfo.GetElementaryType("uint");
+                        sumDecl.TypeDescriptions = uintType.description;
+                        sumDecl.TypeName = uintType.name;
+                        sumDecl.Id = transCtxt.IdToNodeMap.Keys.Min() - 1;
+                        transCtxt.IdToNodeMap.Add(sumDecl.Id, sumDecl);*/
+
+                        return new Csum(var);
+                    }
+
+                    if (retDecls.Count != 1)
+                    {
+                        throw new Exception("Called functions must have a scalar return value");
+                    }
+
+                    VariableDeclaration retDecl = retDecls[0];
+                    
+                    UtilVariableDeclaration decl = new UtilVariableDeclaration();
+                    decl.Constant = retDecl.Constant;
+                    decl.Indexed = retDecl.Indexed;
+                    decl.Name = $"{fnDef.Name}_{varId++}";
+                    decl.Value = null;
+                    decl.Visibility = EnumVisibility.DEFAULT;
+                    decl.StateVariable = false;
+                    decl.StorageLocation = EnumLocation.DEFAULT;
+                    decl.TypeDescriptions = retDecl.TypeDescriptions;
+                    decl.TypeName = retDecl.TypeName;
+                    decl.Id = transCtxt.IdToNodeMap.Keys.Min() - 1;
+                    transCtxt.IdToNodeMap.Add(decl.Id, decl);
+                    
+                    return new Function(ident, args, fnDef, decl);
                 }
             }
             else if (context.ChildCount == 8)
@@ -653,7 +726,21 @@ namespace SpecToBoogie
 
                 if (fnName == "fsum" && fnNode is FunctionDef fn && sumVarNode is Expr sumVar && constraintNode is Expr constraint)
                 {
-                    return new Fsum(fn, sumVar, constraint);
+                    TypeInfo uintInfo = TypeInfo.GetElementaryType("uint");
+                    UtilVariableDeclaration decl = new UtilVariableDeclaration();
+                    decl.Constant = false;
+                    decl.Indexed = false;
+                    decl.Name = $"fsum_{varId++}";
+                    decl.Value = null;
+                    decl.Visibility = EnumVisibility.DEFAULT;
+                    decl.StateVariable = false;
+                    decl.StorageLocation = EnumLocation.DEFAULT;
+                    decl.TypeDescriptions = uintInfo.description;
+                    decl.TypeName = uintInfo.name;
+                    decl.Id = transCtxt.IdToNodeMap.Keys.Min() - 1;
+                    transCtxt.IdToNodeMap.Add(decl.Id, decl);
+                    
+                    return new Fsum(fn, sumVar, constraint, decl);
                 }
             }
 
@@ -663,6 +750,11 @@ namespace SpecToBoogie
         public override SmartLTLNode VisitArgList(SmartLTLParser.ArgListContext context)
         {
             List<Expr> args = new List<Expr>();
+            if (context.ChildCount == 0)
+            {
+                return new ArgList(args);
+            }
+            
             foreach(IParseTree tree in context.children)
             {
                 SmartLTLNode argNode = this.Visit(tree);

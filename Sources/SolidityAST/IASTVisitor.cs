@@ -50,6 +50,7 @@ namespace SolidityAST
         bool Visit(NewExpression node);
         bool Visit(MemberAccess node);
         bool Visit(IndexAccess node);
+        bool Visit(Sum node);
 
         void EndVisit(SourceUnitList node);
         void EndVisit(SourceUnit node);
@@ -97,5 +98,6 @@ namespace SolidityAST
         void EndVisit(NewExpression node);
         void EndVisit(MemberAccess node);
         void EndVisit(IndexAccess node);
+        void EndVisit(Sum node);
     }
 }

@@ -30,6 +30,7 @@ namespace BoogieAST
         bool Visit(BoogieHavocCmd node);
         bool Visit(BoogieSkipCmd node);
         bool Visit(BoogieCommentCmd node);
+        bool Visit(BoogieCommentDeclaration node);
         bool Visit(BoogieWildcardExpr node);
         bool Visit(BoogieIfCmd node);
         bool Visit(BoogieWhileCmd node);
@@ -73,6 +74,7 @@ namespace BoogieAST
         void EndVisit(BoogieHavocCmd node);
         void EndVisit(BoogieSkipCmd node);
         void EndVisit(BoogieCommentCmd node);
+        void EndVisit(BoogieCommentDeclaration node);
         void EndVisit(BoogieWildcardExpr node);
         void EndVisit(BoogieIfCmd node);
         void EndVisit(BoogieWhileCmd node);

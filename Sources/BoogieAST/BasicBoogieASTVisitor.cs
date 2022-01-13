@@ -40,6 +40,7 @@ namespace BoogieAST
         public virtual bool Visit(BoogieHavocCmd node) { return CommonVisit(node); }
         public virtual bool Visit(BoogieSkipCmd node) { return CommonVisit(node); }
         public virtual bool Visit(BoogieCommentCmd node) { return CommonVisit(node); }
+        public virtual bool Visit(BoogieCommentDeclaration node) { return CommonVisit(node); }
         public virtual bool Visit(BoogieWildcardExpr node) { return CommonVisit(node); }
         public virtual bool Visit(BoogieIfCmd node) { return CommonVisit(node); }
         public virtual bool Visit(BoogieWhileCmd node) { return CommonVisit(node); }
@@ -83,6 +84,7 @@ namespace BoogieAST
         public virtual void EndVisit(BoogieHavocCmd node) { CommonEndVisit(node); }
         public virtual void EndVisit(BoogieSkipCmd node) { CommonEndVisit(node); }
         public virtual void EndVisit(BoogieCommentCmd node) { CommonEndVisit(node); }
+        public virtual void EndVisit(BoogieCommentDeclaration node) { CommonEndVisit(node); }
         public virtual void EndVisit(BoogieWildcardExpr node) { CommonEndVisit(node); }
         public virtual void EndVisit(BoogieIfCmd node) { CommonEndVisit(node); }
         public virtual void EndVisit(BoogieWhileCmd node) { CommonEndVisit(node); }

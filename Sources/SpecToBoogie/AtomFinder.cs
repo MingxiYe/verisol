@@ -3,12 +3,12 @@ using System.Collections.Generic;
 
 namespace SpecToBoogie
 {
-    public class VarSearch : BasicLTLASTVisitor
+    public class AtomFinder : BasicLTLASTVisitor
     {
-        public List<Atom> atomList;
-        public VarSearch()
+        public List<Atom> atoms;
+        public AtomFinder()
         {
-            atomList = new List<Atom>();
+            atoms = new List<Atom>();
         }
 
         public override bool Visit(Atom node)
@@ -16,17 +16,19 @@ namespace SpecToBoogie
             Console.WriteLine(node);
             if (node.tgtFn.ident.contract != null)
             {
-                Console.WriteLine("Added");
-                atomList.Add(node);
+                atoms.Add(node);
             }
             else if (node.tgtFn.def.Name.Equals("*"))
             {
-                Console.WriteLine("Added");
-                atomList.Add(node);
+                atoms.Add(node);
+            }
+            else if (node.tgtFn.ident.fnName.Equals("send"))
+            {
+                atoms.Add(node);
             }
             else
             {
-                Console.WriteLine("Unrecognized" + node);
+                throw new Exception("Unrecognized" + node);
             }
 
             return true;
