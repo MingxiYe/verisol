@@ -107,6 +107,8 @@ namespace SolidityAST
         public virtual bool Visit(IndexAccess node) { return CommonVisit(node); }
         
         public virtual bool Visit(Sum node) { return CommonVisit(node); }
+        
+        public virtual bool Visit(UtilityFnCall node) { return CommonVisit(node); }
 
 
         public virtual void EndVisit(SourceUnitList node) { CommonEndVisit(node); }
@@ -202,5 +204,7 @@ namespace SolidityAST
         public virtual void EndVisit(IndexAccess node) { CommonEndVisit(node); }
         
         public virtual void EndVisit(Sum node) { CommonEndVisit(node); }
+        
+        public virtual void EndVisit(UtilityFnCall node) { CommonEndVisit(node); }
     }
  }

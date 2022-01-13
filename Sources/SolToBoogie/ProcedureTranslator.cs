@@ -4324,6 +4324,18 @@ namespace SolToBoogie
             return false;
         }
         
+        public override bool Visit(UtilityFnCall node)
+        {
+            List<BoogieExpr> args = new List<BoogieExpr>();
+            foreach (Expression arg in node.Arguments)
+            {
+                args.Add(TranslateExpr(arg));
+            }
+            
+            currentExpr = new BoogieFuncCallExpr(node.Name, args);
+            return false;
+        }
+        
         public override bool Visit(IndexAccess node)
         {
             preTranslationAction(node);

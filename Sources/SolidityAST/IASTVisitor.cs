@@ -51,6 +51,7 @@ namespace SolidityAST
         bool Visit(MemberAccess node);
         bool Visit(IndexAccess node);
         bool Visit(Sum node);
+        bool Visit(UtilityFnCall node);
 
         void EndVisit(SourceUnitList node);
         void EndVisit(SourceUnit node);
@@ -99,5 +100,6 @@ namespace SolidityAST
         void EndVisit(MemberAccess node);
         void EndVisit(IndexAccess node);
         void EndVisit(Sum node);
+        void EndVisit(UtilityFnCall node);
     }
 }

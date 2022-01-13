@@ -660,6 +660,10 @@ namespace SpecToBoogie
                     FunctionDefinition fnDef = FindExprFunction(contractName, ident.fnName, args);
                     List<VariableDeclaration> retDecls = fnDef.ReturnParameters.Parameters;
 
+                    if (ident.contract == null && ident.fnName.Equals("old"))
+                    {
+                        return new UtilityCall(args.args[0].GetType(transCtxt), "old", args);
+                    }
                     if (ident.contract == null && ident.fnName.Equals("csum"))
                     {
                         Variable var = args.args[0] as Variable;
@@ -668,28 +672,6 @@ namespace SpecToBoogie
                         {
                             throw new Exception("csum must take a variable as an argument");
                         }
-
-                        /*VariableDeclaration varDecl = transCtxt.IdToNodeMap[var.id] as VariableDeclaration;
-
-                        if (varDecl == null)
-                        {
-                            throw new Exception($"Could not find a declaration for variable {var}");
-                        }
-
-                        string sumName = mapHelper.GetSumName(varDecl);
-                        UtilVariableDeclaration sumDecl = new UtilVariableDeclaration();
-                        sumDecl.Constant = false;
-                        sumDecl.Indexed = false;
-                        sumDecl.Name = sumName;
-                        sumDecl.Value = null;
-                        sumDecl.Visibility = EnumVisibility.DEFAULT;
-                        sumDecl.StateVariable = true;
-                        sumDecl.StorageLocation = EnumLocation.DEFAULT;
-                        TypeInfo uintType = TypeInfo.GetElementaryType("uint");
-                        sumDecl.TypeDescriptions = uintType.description;
-                        sumDecl.TypeName = uintType.name;
-                        sumDecl.Id = transCtxt.IdToNodeMap.Keys.Min() - 1;
-                        transCtxt.IdToNodeMap.Add(sumDecl.Id, sumDecl);*/
 
                         return new Csum(var);
                     }

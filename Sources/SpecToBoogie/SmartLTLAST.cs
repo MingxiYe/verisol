@@ -941,6 +941,54 @@ namespace SpecToBoogie
             visitor.EndVisit(this);
         }
     }
+
+    public class UtilityCall : Expr
+    {
+        public ArgList args { get; }
+        public string name { get; }
+        
+        public TypeDescription retType { get; }
+
+        public UtilityCall(TypeDescription retType, string name, ArgList args)
+        {
+            this.name = name;
+            this.args = args;
+            this.retType = retType;
+        }
+
+        public override string ToString()
+        {
+            return $"{name}({args})";
+        }
+
+        public void Accept(ILTLASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                visitor.Visit(args);
+            }
+            visitor.EndVisit(this);
+        }
+
+        public Expression ToSolidityAST()
+        {
+            UtilityFnCall utilityCall = new UtilityFnCall();
+            utilityCall.TypeDescriptions = retType;
+            utilityCall.Name = name;
+            utilityCall.Arguments = new List<Expression>();
+            foreach (Expr expr in args.args)
+            {
+                utilityCall.Arguments.Add(expr.ToSolidityAST());
+            }
+
+            return utilityCall;
+        }
+
+        public TypeDescription GetType(TranslatorContext ctxt)
+        {
+            return retType;
+        }
+    }
     
     public class Function : Expr
     {

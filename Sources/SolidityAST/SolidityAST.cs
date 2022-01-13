@@ -1748,6 +1748,29 @@ namespace SolidityAST
         }
     }
 
+    public class UtilityFnCall : Expression
+    {
+        public List<Expression> Arguments { get; set; }
+
+        public string Name { get; set; }
+
+
+        public override void Accept(IASTVisitor visitor)
+        {
+            if (visitor.Visit(this))
+            {
+                Utils.AcceptList(Arguments, visitor);
+            }
+            
+            visitor.EndVisit(this);
+        }
+
+        public override T Accept<T>(IASTGenericVisitor<T> visitor)
+        {
+            return visitor.Visit(this);
+        }
+    }
+
     public class MemberAccess : Expression
     {
         public Expression Expression { get; set; }
