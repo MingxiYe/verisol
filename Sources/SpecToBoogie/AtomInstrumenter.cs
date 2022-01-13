@@ -232,15 +232,15 @@ namespace SpecToBoogie
                 if (atom.loc == AtomLoc.FINISHED)
                 {
                     BoogieIdentifierExpr success = new BoogieIdentifierExpr("success");
-                    return new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, val, success);
+                    val = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, val, success);
                 }
-                if (atom.loc == AtomLoc.REVERTED)
+                else if (atom.loc == AtomLoc.REVERTED)
                 {
                     BoogieIdentifierExpr success = new BoogieIdentifierExpr("success");
                     BoogieExpr notSuccess = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, success);
-                    return new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, val, notSuccess);
+                    val = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, val, notSuccess);
                 }
-                if (atom.loc == AtomLoc.WILL_SUCCEED)
+                else if (atom.loc == AtomLoc.WILL_SUCCEED)
                 {
                     BoogieIdentifierExpr exception = new BoogieIdentifierExpr("__exception");
                     BoogieExpr notException = new BoogieUnaryOperation(BoogieUnaryOperation.Opcode.NOT, exception);
@@ -250,7 +250,35 @@ namespace SpecToBoogie
                     BoogieExpr balanceFrom = new BoogieMapSelect(balance, from);
                     BoogieExpr availableBal = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.GE, balanceFrom, amount);
                     BoogieExpr check = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, notException, availableBal);
-                    return new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, val, check);
+                    val = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, val, check);
+                }
+            }
+
+            if (atom.tgtFn.ident.fnName == "*" && atom.contractConstraints.Count != 0)
+            {
+                if (atom.contractConstraints.Count != ctxt.ContractDefinitions.Count)
+                {
+                    BoogieExpr typeChk = null;
+                    foreach (ContractDefinition def in atom.contractConstraints)
+                    {
+                        BoogieExpr DTypeExpr = new BoogieIdentifierExpr("DType");
+                        BoogieExpr thisExpr = new BoogieIdentifierExpr("this");
+                        BoogieExpr typeExpr = new BoogieIdentifierExpr(def.Name);
+                        
+                        BoogieMapSelect typeSel = new BoogieMapSelect(DTypeExpr, thisExpr);
+                        BoogieBinaryOperation cmp = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, typeSel, typeExpr);
+                        
+                        if (typeChk == null)
+                        {
+                            typeChk = cmp;
+                        }
+                        else
+                        {
+                            typeChk = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.OR, typeChk, cmp);
+                        }
+                    }
+                    
+                    val = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.AND, val, typeChk);
                 }
             }
 

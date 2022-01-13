@@ -257,12 +257,17 @@ namespace SpecToBoogie
         public FunctionDef tgtFn { get; }
         public Expr constraint { get; }
         public string name { get; }
-        public Atom(AtomLoc loc, FunctionDef tgtFn, Expr constraint, string name)
+        
+        public HashSet<ContractDefinition> contractConstraints { get; }
+
+        public Atom(AtomLoc loc, FunctionDef tgtFn, Expr constraint, string name,
+            HashSet<ContractDefinition> contractConstraints)
         {
             this.loc = loc;
             this.tgtFn = tgtFn;
             this.constraint = constraint;
             this.name = name;
+            this.contractConstraints = contractConstraints;
         }
         
         public override string ToString()
@@ -582,7 +587,7 @@ namespace SpecToBoogie
         public String name { get; }
         public int id { get; }
 
-        public TypeDescription typeDesc;
+        public TypeDescription typeDesc { get; }
 
         public Variable(String name, int declId, TypeDescription typeDesc)
         {
@@ -622,10 +627,13 @@ namespace SpecToBoogie
         public Expr baseExpr { get; }
         public string memberName { get; }
 
-        public Member(Expr baseExpr, string memberName)
+        public TypeDescription memberType { get; }
+
+        public Member(Expr baseExpr, string memberName, TypeDescription memberType)
         {
             this.baseExpr = baseExpr;
             this.memberName = memberName;
+            this.memberType = memberType;
         }
         
         public override string ToString()
@@ -638,12 +646,14 @@ namespace SpecToBoogie
             MemberAccess access = new MemberAccess();
             access.Expression = baseExpr.ToSolidityAST();
             access.MemberName = memberName;
+            access.TypeDescriptions = memberType;
             return access;
         }
 
         public TypeDescription GetType(TranslatorContext ctxt)
         {
-            TypeDescription memberType = new TypeDescription();
+            return memberType;
+            /*TypeDescription memberType = new TypeDescription();
             if (memberName.Equals("length"))
             {
                 memberType.TypeString = "uint";
@@ -723,7 +733,7 @@ namespace SpecToBoogie
                     }
                 }
             }
-            throw new Exception($"Could not find member {memberName} for {baseExpr}");
+            throw new Exception($"Could not find member {memberName} for {baseExpr}");*/
         }
 
         public void Accept(ILTLASTVisitor visitor)

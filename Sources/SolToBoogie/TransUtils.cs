@@ -1052,7 +1052,17 @@ namespace SolToBoogie
         {
             if (typeDescription.IsContract())
             {
-                return typeDescription.TypeString.Substring(typeDescription.TypeString.IndexOf(' ') + 1);
+                return typeDescription.TypeString.Substring(typeDescription.TypeString.LastIndexOf(' ') + 1);
+            }
+
+            return null;
+        }
+        
+        public static string GetStructName(TypeDescription typeDescription)
+        {
+            if (typeDescription.IsContract())
+            {
+                return typeDescription.TypeString.Substring(typeDescription.TypeString.LastIndexOf(' ') + 1);
             }
 
             return null;

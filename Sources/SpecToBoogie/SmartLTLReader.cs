@@ -18,6 +18,8 @@ namespace SpecToBoogie
         private TranslatorContext transCtxt;
         private FunctionDef curFn;
         private MapArrayHelper mapHelper;
+        private HashSet<ContractDefinition> atomConstraints;
+        
         public VarDeclList freeVars { get; set; }
         public static int UNKNOWN_ID = Int32.MinValue;
         private static int varId = 0;
@@ -392,6 +394,7 @@ namespace SpecToBoogie
                 }
                 
                 curFn = tgtFn;
+                atomConstraints = new HashSet<ContractDefinition>();
                 Expr constraint = null;
                 if (context.ChildCount == 6)
                 {
@@ -413,19 +416,119 @@ namespace SpecToBoogie
                 }
 
                 curFn = null;
-                return new Atom(atomLoc, tgtFn, constraint, getAxiomVarName(atomLoc, tgtFn));
+                return new Atom(atomLoc, tgtFn, constraint, getAxiomVarName(atomLoc, tgtFn), atomConstraints);
             }
             else
             {
                 curFn = tgtFn;
+                atomConstraints = new HashSet<ContractDefinition>();
                 SmartLTLNode constraintNode = this.Visit(context.GetChild(2));
                 if (constraintNode is Expr constraint)
                 {
-                    return new Atom(atomLoc, tgtFn, constraint, getAxiomVarName(atomLoc, tgtFn));
+                    return new Atom(atomLoc, tgtFn, constraint, getAxiomVarName(atomLoc, tgtFn), atomConstraints);
                 }
             }
             
             throw new Exception("Translation Error");
+        }
+
+        private TypeDescription GetMemberType(Expr baseExpr, string memberName)
+        {
+            TypeDescription memberType = new TypeDescription();
+            if (memberName.Equals("length"))
+            {
+                memberType.TypeString = "uint";
+                return memberType;
+            }
+
+            if (memberName.Equals("balance"))
+            {
+                memberType.TypeString = "uint";
+                return memberType;
+            }
+
+            if (baseExpr is Variable var)
+            {
+                if (var.name.Equals("msg"))
+                {
+                    if (memberName.Equals("sender"))
+                    {
+                        memberType.TypeString = "address";
+                        return memberType;
+                    }
+                    else if (memberName.Equals("value"))
+                    {
+                        memberType.TypeString = "uint";
+                        return memberType;
+                    }
+
+                    throw new Exception($"Unknown member for msg: {memberName}");
+
+                }
+                else if (var.name.Equals("this"))
+                {
+                    ContractDefinition def = transCtxt.GetContractByName(TransUtils.GetContractName(var.typeDesc));
+                    if (def == null)
+                    {
+                        throw new Exception($"Could not find the definition of ${var.typeDesc.TypeString}");
+                    }
+
+                    VariableDeclaration decl = transCtxt.GetStateVarByDynamicType(memberName, def);
+                    if (decl != null)
+                    {
+                        return decl.TypeDescriptions;
+                    }
+                    
+                    if (memberName.Equals("balance"))
+                    {
+                        memberType.TypeString = "uint";
+                        return memberType;
+                    }
+                    throw new Exception($"Unknown member for this: {memberName}");
+                } 
+                else if (var.name.Equals("block"))
+                {
+                    if (memberName.Equals("timestamp") || memberName.Equals("number"))
+                    {
+                        memberType.TypeString = "uint";
+                        return memberType;
+                    }
+
+                    throw new Exception($"Unknown member for this: {memberName}");
+                }
+
+                if (var.id != SmartLTLReader.UNKNOWN_ID)
+                {
+                    ASTNode refDecl = transCtxt.GetASTNodeById(var.id);
+
+                    if (refDecl is EnumDefinition)
+                    {
+                        memberType.TypeString = "uint";
+                        return memberType;
+                    }
+                }
+            }
+            
+            TypeDescription baseType = baseExpr.GetType(transCtxt);
+            if (baseType.IsStruct())
+            {
+                throw new Exception("Structs currently not supported");
+            }
+
+            if (baseType.IsContract())
+            {
+                string contractName = TransUtils.GetContractName(baseType);
+                ContractDefinition contract = transCtxt.GetContractByName(contractName);
+                if (!transCtxt.HasStateVar(memberName, contract))
+                {
+                    throw new Exception($"Could not find state var with name {memberName} in {contractName}");
+                }
+
+                VariableDeclaration varDecl = transCtxt.GetStateVarByDynamicType(memberName, contract);
+                return varDecl.TypeDescriptions;
+            }
+            
+            throw new Exception($"Could not find member {memberName} for {baseExpr}");
         }
         
         public override SmartLTLNode VisitVarAccess(SmartLTLParser.VarAccessContext context)
@@ -442,7 +545,7 @@ namespace SpecToBoogie
 
                 if (baseNode is Expr baseExpr)
                 {
-                    return new Member(baseExpr, member);
+                    return new Member(baseExpr, member, GetMemberType(baseExpr, member));
                 }
             }
 
@@ -943,6 +1046,21 @@ namespace SpecToBoogie
             if (decl == null)
             {
                 decl = GetImplicitDecl(name);
+            }
+
+            bool checkDtype = false;
+            if (decl == null && curFn.ident.fnName == "*" && transCtxt.StateVarNameResolutionMap.ContainsKey(name))
+            {
+                if (transCtxt.StateVarNameResolutionMap[name].Values.Count == 1)
+                {
+                    decl = transCtxt.StateVarNameResolutionMap[name].Values.First();
+                    atomConstraints.UnionWith(transCtxt.StateVarNameResolutionMap[name].Keys);
+                    //throw new Exception($"Need to check DType");
+                }
+                else
+                {
+                    throw new Exception($"Cannot uniquely identify {name}");
+                }
             }
 
             if (decl == null)
