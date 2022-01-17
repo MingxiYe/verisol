@@ -318,7 +318,7 @@ namespace SpecToBoogie
         
         public string ToLTL()
         {
-            return $"{name}";
+            return $"AP({name})";
         }
     }
 

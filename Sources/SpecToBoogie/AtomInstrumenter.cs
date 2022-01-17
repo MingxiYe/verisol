@@ -20,6 +20,8 @@ namespace SpecToBoogie
         public Dictionary<String, List<Atom>> willSucceedVars { get; private set; }
         public Dictionary<String, List<Atom>> finishedVars { get; private set; }
         public Dictionary<String, List<Atom>> revertedVars { get; private set; }
+
+        private HashSet<Atom> initializedAtom;
         
         public List<Atom> sendSuccessBegin { get; private set; }
         
@@ -37,6 +39,7 @@ namespace SpecToBoogie
         {
             this.ctxt = ctxt;
             this.spec = spec;
+            initializedAtom = new HashSet<Atom>();
             startedVars = new Dictionary<string, List<Atom>>();
             willSucceedVars = new Dictionary<string, List<Atom>>();
             finishedVars = new Dictionary<string, List<Atom>>();
@@ -168,6 +171,21 @@ namespace SpecToBoogie
             return translation;
         }
 
+        private void initializeVar(string varName, BoogieExpr initVal)
+        {
+            BoogieIdentifierExpr varExpr = new BoogieIdentifierExpr(varName);
+            BoogieBinaryOperation eqZero = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, varExpr, initVal);
+            BoogieAssumeCmd init = new BoogieAssumeCmd(eqZero);
+            FunctionSearch fs = new FunctionSearch("main");
+            ctxt.Program.Accept(fs);
+            if (fs.desired == null)
+            {
+                throw new Exception("Could not find main");
+            }
+            
+            fs.desired.StructuredStmts.PrependStatement(init);
+        }
+        
         private void instrumentFsum(HashSet<Fsum> fsums)
         {
             List<BoogieTypedIdent> fsumVars = new List<BoogieTypedIdent>();
@@ -208,7 +226,8 @@ namespace SpecToBoogie
                 }
                 
                 fsumVars.Add(new BoogieTypedIdent(sum.varDecl.Name, BoogieType.Int));
-                BoogieIdentifierExpr varExpr = new BoogieIdentifierExpr(sum.varDecl.Name);
+                initializeVar(sum.varDecl.Name, new BoogieLiteralExpr(BigInteger.Zero));
+                /*BoogieIdentifierExpr varExpr = new BoogieIdentifierExpr(sum.varDecl.Name);
                 BoogieLiteralExpr zeroExpr = new BoogieLiteralExpr(BigInteger.Zero);
                 BoogieBinaryOperation eqZero = new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.EQ, varExpr, zeroExpr);
                 BoogieAssumeCmd init = new BoogieAssumeCmd(eqZero);
@@ -219,7 +238,7 @@ namespace SpecToBoogie
                     throw new Exception("Could not find main");
                 }
                 
-                fs.desired.StructuredStmts.PrependStatement(init);
+                fs.desired.StructuredStmts.PrependStatement(init);*/
             }
             
             declareVars(fsumVars);
@@ -291,6 +310,10 @@ namespace SpecToBoogie
             HashSet<Fsum> fsums = new HashSet<Fsum>();
             foreach (Atom atom in atoms)
             {
+                if (initializedAtom.Add(atom))
+                {
+                    initializeVar(atom.name, new BoogieLiteralExpr(false));
+                }
                 if (atom.constraint == null)
                 {
                     continue;

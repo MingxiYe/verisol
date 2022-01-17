@@ -28,17 +28,17 @@ namespace SpecToBoogie
             AtomInstrumenter atomInstrumenter = new AtomInstrumenter(ctxt, spec);
             atomInstrumenter.instrument();
 
-            if (spec.property != null)
-            {
-                BoogieCommentDeclaration propertyComment = new BoogieCommentDeclaration($"#LTLProperty: {spec.property.ToLTL()}");
-                ctxt.Program.Declarations.Insert(0, propertyComment);
-                Console.WriteLine($"// #LTLProperty: {spec.property.ToLTL()}");
-            }
             if (spec.fairness != null)
             {
                 BoogieCommentDeclaration fairnessComment = new BoogieCommentDeclaration($"#LTLFairness: {spec.fairness.ToLTL()}");
                 ctxt.Program.Declarations.Insert(0, fairnessComment);
                 Console.WriteLine($"// #LTLFairness: {spec.fairness.ToLTL()}");
+            }
+            if (spec.property != null)
+            {
+                BoogieCommentDeclaration propertyComment = new BoogieCommentDeclaration($"#LTLProperty: {spec.property.ToLTL()}");
+                ctxt.Program.Declarations.Insert(0, propertyComment);
+                Console.WriteLine($"// #LTLProperty: {spec.property.ToLTL()}");
             }
         }
     }
