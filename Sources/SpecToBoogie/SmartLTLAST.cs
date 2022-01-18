@@ -215,6 +215,11 @@ namespace SpecToBoogie
 
         public string ToLTL()
         {
+            if (op.Equals(";"))
+            {
+                return $"{lhs.ToLTL()} && X(<>({rhs.ToLTL()}))";
+            }
+            
             return $"({lhs.ToLTL()} {op} {rhs.ToLTL()})";
         }
     }
