@@ -69,6 +69,8 @@ namespace SolToBoogie
         
         public bool SpecToBoogie { get; set; }
         
+        public string SpecFile { get; set; }
+        
         public bool NoCustomTypes { get; set; }
         
         public bool CreateMainHarness { get; set; }

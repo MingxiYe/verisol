@@ -470,6 +470,7 @@ namespace SpecToBoogie
             binOp.Operator = op;
             binOp.LeftExpression = lhs.ToSolidityAST();
             binOp.RightExpression = rhs.ToSolidityAST();
+            binOp.TypeDescriptions = resultDesc;
             return binOp;
         }
 
@@ -500,7 +501,7 @@ namespace SpecToBoogie
         public LiteralVal(BigInteger val)
         {
             this.val = val.ToString();
-            this.val = "number";
+            this.kind = "number";
             this.litType = TypeInfo.GetElementaryType("uint");
         }
 
@@ -1007,13 +1008,16 @@ namespace SpecToBoogie
 
         public FunctionDefinition def;
         public VariableDeclaration retDecl { get; }
+
+        public Expression nameExpr;
         
-        public Function(FunctionIdent ident, ArgList args, FunctionDefinition fnDef, VariableDeclaration retDecl)
+        public Function(FunctionIdent ident, Expression nameExpr, ArgList args, FunctionDefinition fnDef, VariableDeclaration retDecl)
         {
             this.fnIdent = ident;
             this.args = args;
             this.def = fnDef;
             this.retDecl = retDecl;
+            this.nameExpr = nameExpr;
         }
 
         public override string ToString()
@@ -1021,21 +1025,34 @@ namespace SpecToBoogie
             return $"{fnIdent}({args})";
         }
 
+        public bool isTypeCast()
+        {
+            return fnIdent.contract == null && fnIdent.fnName.Equals(retDecl.TypeDescriptions.TypeString);
+        }
+
         public Expression GetCallExpr()
         {
-            Identifier callIdent = new Identifier();
-            callIdent.Name = def.Name;
-            callIdent.ReferencedDeclaration = def.Id;
+            //Identifier callIdent = new Identifier();
+            //callIdent.Name = def.Name;
+            //callIdent.ReferencedDeclaration = def.Id;
             
             FunctionCall call = new FunctionCall();
             call.Arguments = new List<Expression>();
-            call.Kind = "functionCall";
+            if (isTypeCast())
+            {
+                call.Kind = "typeConversion";
+            }
+            else
+            {
+                call.Kind = "functionCall";
+            }
+            
             foreach (Expr expr in args.args)
             {
                 call.Arguments.Add(expr.ToSolidityAST());
             }
 
-            call.Expression = callIdent;
+            call.Expression = nameExpr;
 
             call.Id = def.Id;
             

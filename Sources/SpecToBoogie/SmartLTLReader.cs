@@ -207,7 +207,7 @@ namespace SpecToBoogie
             return null;
         }
 
-        public FunctionDefinition GetImplicitExprFunctionDefinition(string name, ArgList args)
+        public Tuple<Expression, FunctionDefinition> GetImplicitExprFunctionDefinition(string name, ArgList args)
         {
             if (name.Equals("fsum") && args.args.Count == 3)
             {
@@ -244,7 +244,11 @@ namespace SpecToBoogie
 
                 fnDef.ReturnParameters.Parameters.Add(sumDecl);
                 
-                return fnDef;
+                Identifier ident = new Identifier();
+                ident.Name = "fsum";
+                ident.ReferencedDeclaration = UNKNOWN_ID;
+                
+                return new Tuple<Expression, FunctionDefinition>(ident, fnDef);
             }
             if (name.Equals("csum") && args.args.Count == 1)
             {
@@ -271,8 +275,12 @@ namespace SpecToBoogie
                 sumDecl.Id = UNKNOWN_ID;
 
                 fnDef.ReturnParameters.Parameters.Add(sumDecl);
-
-                return fnDef;
+                
+                Identifier ident = new Identifier();
+                ident.Name = "csum";
+                ident.ReferencedDeclaration = UNKNOWN_ID;
+                
+                return new Tuple<Expression, FunctionDefinition>(ident, fnDef);
             }
             if (name.Equals("address") && args.args.Count == 1)
             {
@@ -291,16 +299,19 @@ namespace SpecToBoogie
                 fnDef.ReturnParameters = new ParameterList();
                 fnDef.ReturnParameters.Parameters = new List<VariableDeclaration>();
                 
-                TypeInfo uintType = TypeInfo.GetElementaryType("address");
+                TypeInfo addressType = TypeInfo.GetElementaryType("address");
                 VariableDeclaration retDecl = new VariableDeclaration();
                 retDecl.Name = "ret";
-                retDecl.TypeName = uintType.name;
-                retDecl.TypeDescriptions = uintType.description;
+                retDecl.TypeName = addressType.name;
+                retDecl.TypeDescriptions = addressType.description;
                 retDecl.Id = UNKNOWN_ID;
 
                 fnDef.ReturnParameters.Parameters.Add(retDecl);
+                
+                ElementaryTypeNameExpression ident = new ElementaryTypeNameExpression();
+                ident.TypeName = "address";
 
-                return fnDef;
+                return new Tuple<Expression, FunctionDefinition>(ident, fnDef);
             }
             if (name.Equals("old") && args.args.Count == 1)
             {
@@ -329,7 +340,10 @@ namespace SpecToBoogie
 
                 fnDef.ReturnParameters.Parameters.Add(retDecl);
 
-                return fnDef;
+                Identifier ident = new Identifier();
+                ident.Name = fnDef.Name;
+                ident.ReferencedDeclaration = fnDef.Id;
+                return new Tuple<Expression, FunctionDefinition>(ident, fnDef);
             }
 
             return null;
@@ -592,7 +606,7 @@ namespace SpecToBoogie
             return fnDef;
         }
         
-        private FunctionDefinition FindExprFunction(String contractName, String fnName, ArgList args)
+        private Tuple<Expression, FunctionDefinition> FindExprFunction(String contractName, String fnName, ArgList args)
         {
             if (contractName != null)
             {
@@ -603,13 +617,16 @@ namespace SpecToBoogie
 
                 if (filteredDefs.Count == 1)
                 {
-                    return filteredDefs[0];
+                    Identifier callIdent = new Identifier();
+                    callIdent.Name = filteredDefs[0].Name;
+                    callIdent.ReferencedDeclaration = filteredDefs[0].Id;
+                    return new Tuple<Expression, FunctionDefinition>(callIdent, filteredDefs[0]);
                 }
                 
                 throw new Exception($"Could not uniquely identify {contractName}.{fnName}");
             }
 
-            FunctionDefinition fnDef = GetImplicitExprFunctionDefinition(fnName, args);
+            Tuple<Expression, FunctionDefinition> fnDef = GetImplicitExprFunctionDefinition(fnName, args);
             if (fnDef == null)
             {
                 throw new Exception($"Could not find function {fnName}");
@@ -760,8 +777,8 @@ namespace SpecToBoogie
                 if (identNode is FunctionIdent ident && argNode is ArgList args)
                 {
                     string contractName = ident.contract == null ? null : ident.contract.Name;
-                    FunctionDefinition fnDef = FindExprFunction(contractName, ident.fnName, args);
-                    List<VariableDeclaration> retDecls = fnDef.ReturnParameters.Parameters;
+                    Tuple<Expression, FunctionDefinition> fnDef = FindExprFunction(contractName, ident.fnName, args);
+                    List<VariableDeclaration> retDecls = fnDef.Item2.ReturnParameters.Parameters;
 
                     if (ident.contract == null && ident.fnName.Equals("old"))
                     {
@@ -789,7 +806,7 @@ namespace SpecToBoogie
                     UtilVariableDeclaration decl = new UtilVariableDeclaration();
                     decl.Constant = retDecl.Constant;
                     decl.Indexed = retDecl.Indexed;
-                    decl.Name = $"{fnDef.Name}_{varId++}";
+                    decl.Name = $"{fnDef.Item2.Name}_{varId++}";
                     decl.Value = null;
                     decl.Visibility = EnumVisibility.DEFAULT;
                     decl.StateVariable = false;
@@ -799,7 +816,7 @@ namespace SpecToBoogie
                     decl.Id = transCtxt.IdToNodeMap.Keys.Min() - 1;
                     transCtxt.IdToNodeMap.Add(decl.Id, decl);
                     
-                    return new Function(ident, args, fnDef, decl);
+                    return new Function(ident, fnDef.Item1, args, fnDef.Item2, decl);
                 }
             }
             else if (context.ChildCount == 8)
@@ -1004,15 +1021,15 @@ namespace SpecToBoogie
                     msgDecl.Id = UNKNOWN_ID;
                     return msgDecl;
                 case "this":
-                    String contractName = transCtxt.EntryPointContract;
+                    /*String contractName = transCtxt.EntryPointContract;
                     if (curFn.ident.contract != null)
                     {
                         contractName = curFn.ident.contract.Name;
-                    }
+                    }*/
                     
                     VariableDeclaration thisDecl = new VariableDeclaration();
-                    thisDecl.TypeDescriptions =
-                        TypeInfo.GetContractType(transCtxt, contractName).description;
+                    thisDecl.TypeDescriptions = TypeInfo.GetElementaryType("address").description;
+                        //TypeInfo.GetContractType(transCtxt, contractName).description;
                     thisDecl.Id = UNKNOWN_ID;
                     return thisDecl;
             }

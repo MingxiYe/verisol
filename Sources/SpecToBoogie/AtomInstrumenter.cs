@@ -124,13 +124,21 @@ namespace SpecToBoogie
                 BoogieIdentifierExpr revertHoldExpr = new BoogieIdentifierExpr("revertHold");
                 BoogieIdentifierExpr revertExpr = new BoogieIdentifierExpr("revert");
                 BoogieAssignCmd revertSave = new BoogieAssignCmd(revertHoldExpr, revertExpr);
+                
                 Tuple<BoogieStmtList, BoogieExpr> translation = ctxt.procedureTranslator.TranslateSolExpr(fnCall.GetCallExpr());
-                BoogieCallCmd callCmd = findCall(fnCall, translation.Item1);
-                callCmd.Callee += "__success";
-                BoogieAssignCmd revertRestore = new BoogieAssignCmd(revertExpr, revertHoldExpr);
-                stmts.AddStatement(revertSave);
-                stmts.AddStatement(callCmd);
-                stmts.AddStatement(revertRestore);
+                if (fnCall.isTypeCast())
+                {
+                    stmts.AppendStmtList(translation.Item1);
+                }
+                else {
+                    BoogieCallCmd callCmd = findCall(fnCall, translation.Item1);
+                    callCmd.Callee += "__success";
+                    BoogieAssignCmd revertRestore = new BoogieAssignCmd(revertExpr, revertHoldExpr);
+                    stmts.AddStatement(revertSave);
+                    stmts.AddStatement(callCmd);
+                    stmts.AddStatement(revertRestore);
+                }
+                
                 fnVars.Add(new BoogieLocalVariable(new BoogieTypedIdent(fnCall.retDecl.Name, TransUtils.GetBoogieTypeFromSolidityTypeName(fnCall.retDecl.TypeName))));
             }
             
@@ -542,7 +550,10 @@ namespace SpecToBoogie
             {
                 foreach (FunctionDefinition fnDef in ctxt.GetVisibleFunctionsByContract(def))
                 {
-                    visibleFns.Add(new Tuple<ContractDefinition, FunctionDefinition>(def, fnDef));
+                    if (fnDef.Visibility == EnumVisibility.PUBLIC || fnDef.Visibility == EnumVisibility.EXTERNAL)
+                    {
+                        visibleFns.Add(new Tuple<ContractDefinition, FunctionDefinition>(def, fnDef));
+                    }
                 }
             }
 

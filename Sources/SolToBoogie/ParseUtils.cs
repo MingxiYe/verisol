@@ -233,6 +233,13 @@ namespace SolToBoogie
             {
                 translatorFlags.SpecToBoogie = true;
             }
+            
+            if (args.Any(x => x.StartsWith("/specToBoogie:")))
+            {
+                translatorFlags.SpecToBoogie = true;
+                var arg = args.Where(x => x.StartsWith("/specToBoogie:")).First();
+                translatorFlags.SpecFile = arg.Substring("/specToBoogie:".Length);
+            }
 
             translatorFlags.PerformContractInferce = args.Any(x => x.StartsWith("/contractInfer"));
 

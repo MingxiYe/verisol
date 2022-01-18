@@ -25,8 +25,11 @@ namespace SpecToBoogie
                 throw new Exception($"Could not find specification in {specFile}");
             }
 
+            bool modArithFlag = ctxt.TranslateFlags.UseModularArithmetic;
+            ctxt.TranslateFlags.UseModularArithmetic = false;
             AtomInstrumenter atomInstrumenter = new AtomInstrumenter(ctxt, spec);
             atomInstrumenter.instrument();
+            ctxt.TranslateFlags.UseModularArithmetic = modArithFlag;
 
             if (spec.fairness != null)
             {

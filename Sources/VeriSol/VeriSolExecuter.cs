@@ -378,7 +378,7 @@ namespace VeriSolRunner
                 List<ProgramInstrumenter> instrumenters = new List<ProgramInstrumenter>();
                 if (translatorFlags.SpecToBoogie)
                 {
-                    instrumenters.Add(new SpecInstrumenter(SolidityFilePath));
+                    instrumenters.Add(new SpecInstrumenter(translatorFlags.SpecFile == null ? SolidityFilePath : translatorFlags.SpecFile));
                 }
                 
                 BoogieAST boogieAST = translator.Translate(solidityAST, ignoreMethods, instrumenters, translatorFlags, ContractName);
