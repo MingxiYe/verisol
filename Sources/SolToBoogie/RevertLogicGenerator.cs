@@ -492,9 +492,9 @@ namespace SolToBoogie
             //    if(__exception)
             //    {
             //       //save current temps
-            //      if ((__tmp__Balance[from]) >= (amt)) {
-            //           call FallbackDispatch__fail(from, to, amt);
-            //      }
+            //      assume ((__tmp__Balance[from]) >= (amt)) 
+            //      call FallbackDispatch__fail(from, to, amt);
+            //    
             //
             //       success := false;
             //       assume(__revert);
@@ -561,19 +561,20 @@ namespace SolToBoogie
                 exceptionCase.AddStatement(new BoogieAssignCmd(new BoogieIdentifierExpr(tmpLocalName), new BoogieIdentifierExpr(shadowName)));
             }
             
-            BoogieStmtList exStmtList = new BoogieStmtList();
-            exStmtList.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
+            //BoogieStmtList exStmtList = new BoogieStmtList();
+            exceptionCase.AddStatement(new BoogieAssumeCmd(checkTmpBalGuard));
+            exceptionCase.AddStatement(new BoogieCommentCmd("---- Logic for payable function START "));
             var exBalFrom = new BoogieMapSelect(new BoogieIdentifierExpr(shadowGlobals["Balance"].Name), new BoogieIdentifierExpr(inParams[0].Name));
             var exBalTo = new BoogieMapSelect(new BoogieIdentifierExpr(shadowGlobals["Balance"].Name), new BoogieIdentifierExpr(inParams[1].Name));
             var exMsgVal = new BoogieIdentifierExpr(inParams[2].Name);
             //balance[msg.sender] = balance[msg.sender] - msg.value
-            exStmtList.AddStatement(new BoogieAssignCmd(exBalFrom, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, exBalFrom, exMsgVal)));
+            exceptionCase.AddStatement(new BoogieAssignCmd(exBalFrom, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.SUB, exBalFrom, exMsgVal)));
             //balance[this] = balance[this] + msg.value
-            exStmtList.AddStatement(new BoogieAssignCmd(exBalTo, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, exBalTo, exMsgVal)));
-            exStmtList.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
-            exStmtList.AddStatement(callFailDispatch);
+            exceptionCase.AddStatement(new BoogieAssignCmd(exBalTo, new BoogieBinaryOperation(BoogieBinaryOperation.Opcode.ADD, exBalTo, exMsgVal)));
+            exceptionCase.AddStatement(new BoogieCommentCmd("---- Logic for payable function END "));
+            exceptionCase.AddStatement(callFailDispatch);
 
-            exceptionCase.AddStatement(new BoogieIfCmd(checkTmpBalGuard, exStmtList, null));
+            //exceptionCase.AddStatement(new BoogieIfCmd(checkTmpBalGuard, exStmtList, null));
             exceptionCase.AddStatement(new BoogieAssignCmd(successId, new BoogieLiteralExpr(false)));
             BoogieExpr failAssumePred = revertId;
             if (context.TranslateFlags.InstrumentGas)

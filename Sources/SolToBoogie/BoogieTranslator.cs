@@ -110,6 +110,15 @@ namespace SolToBoogie
                 RevertLogicGenerator reverGenerator = new RevertLogicGenerator(context);
                 reverGenerator.Generate();
             }
+
+            if (context.TranslateFlags.CreateMainHarness)
+            {
+                BoogieProcedure procedure = new BoogieProcedure("ULTIMATE.start", new List<BoogieVariable>(), new List<BoogieVariable>());
+                BoogieCallCmd mainCall = new BoogieCallCmd("main", new List<BoogieExpr>(), new List<BoogieIdentifierExpr>());
+                BoogieImplementation imp = new BoogieImplementation("ULTIMATE.start", new List<BoogieVariable>(), new List<BoogieVariable>(), new List<BoogieVariable>(), BoogieStmtList.MakeSingletonStmtList(mainCall));
+                context.Program.Declarations.Add(procedure);
+                context.Program.Declarations.Add(imp);
+            }
             
             foreach (ProgramInstrumenter instrumenter in instrumenters)
             {

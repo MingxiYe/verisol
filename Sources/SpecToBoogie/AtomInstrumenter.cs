@@ -121,9 +121,7 @@ namespace SpecToBoogie
                     revertHoldFns.Add(fn.Name);
                 }
                     
-                BoogieIdentifierExpr revertHoldExpr = new BoogieIdentifierExpr("revertHold");
-                BoogieIdentifierExpr revertExpr = new BoogieIdentifierExpr("revert");
-                BoogieAssignCmd revertSave = new BoogieAssignCmd(revertHoldExpr, revertExpr);
+                
                 
                 Tuple<BoogieStmtList, BoogieExpr> translation = ctxt.procedureTranslator.TranslateSolExpr(fnCall.GetCallExpr());
                 if (fnCall.isTypeCast())
@@ -133,8 +131,13 @@ namespace SpecToBoogie
                 else {
                     BoogieCallCmd callCmd = findCall(fnCall, translation.Item1);
                     callCmd.Callee += "__success";
+                    BoogieIdentifierExpr revertHoldExpr = new BoogieIdentifierExpr("revertHold");
+                    BoogieIdentifierExpr revertExpr = new BoogieIdentifierExpr("revert");
+                    BoogieAssignCmd notRevert = new BoogieAssignCmd(revertExpr, new BoogieLiteralExpr(false));
+                    BoogieAssignCmd revertSave = new BoogieAssignCmd(revertHoldExpr, revertExpr);
                     BoogieAssignCmd revertRestore = new BoogieAssignCmd(revertExpr, revertHoldExpr);
                     stmts.AddStatement(revertSave);
+                    stmts.AddStatement(notRevert);
                     stmts.AddStatement(callCmd);
                     stmts.AddStatement(revertRestore);
                 }
