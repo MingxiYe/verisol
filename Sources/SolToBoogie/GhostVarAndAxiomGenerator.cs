@@ -426,14 +426,24 @@ namespace SolToBoogie
             foreach(var member in structDefn.Members)
             {
                 // Debug.Assert(!member.TypeDescriptions.IsStruct(), "Do no handle nested structs yet!");
-                // if(member.TypeDescription.IsStruct()){
-                //     foreach(var submember in member.Members){
-
-                //     }
-                // }
-                var formalType = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
-                var formalName = member.Name;
-                inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
+                if(member.TypeDescriptions.IsStruct() 
+                        && member.TypeName is UserDefinedTypeName udt){
+                    foreach (var node in contract.Nodes){
+                        if (node is StructDefinition substructDefn
+                                && substructDefn.CanonicalName == 
+                                udt.TypeDescriptions.TypeString.Substring("struct ".Length)){
+                            foreach(var submember in substructDefn.Members){
+                                var formalType = TransUtils.GetBoogieTypeFromSolidityTypeName(submember.TypeName);
+                                var formalName = member.Name + "_" + submember.Name;
+                                inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
+                            }
+                        }
+                    }
+                }else{
+                    var formalType = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
+                    var formalName = member.Name;
+                    inParams.Add(new BoogieFormalParam(new BoogieTypedIdent(formalName, formalType)));
+                }
             }
 
             List<BoogieVariable> outParams = new List<BoogieVariable>();
@@ -452,10 +462,26 @@ namespace SolToBoogie
             {
                 //f[this] = f_arg
                 // Debug.Assert(!member.TypeDescriptions.IsStruct(), "Do no handle nested structs yet!");
-                var mapName = member.Name + "_" + structDefn.CanonicalName;
-                var formalName = member.Name;
-                var mapSelectExpr = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), new BoogieIdentifierExpr("this"));
-                procBody.AddStatement(new BoogieAssignCmd(mapSelectExpr, new BoogieIdentifierExpr(member.Name)));
+                if(member.TypeDescriptions.IsStruct()
+                        && member.TypeName is UserDefinedTypeName udt){
+                    foreach(var node in contract.Nodes){
+                        if (node is StructDefinition substructDefn 
+                                && substructDefn.CanonicalName == 
+                                udt.TypeDescriptions.TypeString.Substring("struct ".Length)){
+                            foreach(var submember in substructDefn.Members){
+                                var mapName = member.Name + "_" + submember.Name + "_" + structDefn.CanonicalName;
+                                var formalName = member.Name + "_" + submember.Name;
+                                var mapSelectExpr = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), new BoogieIdentifierExpr("this"));
+                                procBody.AddStatement(new BoogieAssignCmd(mapSelectExpr, new BoogieIdentifierExpr(formalName)));
+                            }
+                        }
+                    }
+                }else{
+                    var mapName = member.Name + "_" + structDefn.CanonicalName;
+                    var formalName = member.Name;
+                    var mapSelectExpr = new BoogieMapSelect(new BoogieIdentifierExpr(mapName), new BoogieIdentifierExpr("this"));
+                    procBody.AddStatement(new BoogieAssignCmd(mapSelectExpr, new BoogieIdentifierExpr(member.Name)));
+                }
             }
 
             BoogieImplementation implementation = new BoogieImplementation(procName, inParams, outParams, localVars, procBody);

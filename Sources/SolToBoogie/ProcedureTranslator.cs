@@ -129,10 +129,26 @@ namespace SolToBoogie
             {
                 // VeriSolAssert(!member.TypeDescriptions.IsStruct(),
                 //     "Do no handle nested structs yet!");
-                var type = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
-                var mapType = new BoogieMapType(BoogieType.Ref, type);
-                var mapName = member.Name + "_" + structDefn.CanonicalName;
-                context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(mapName, mapType)));
+                if(member.TypeDescriptions.IsStruct()
+                        && member.TypeName is UserDefinedTypeName udt){
+                    foreach(var node in currentContract.Nodes){
+                        if(node is StructDefinition substructDefn
+                                && substructDefn.CanonicalName ==
+                                udt.TypeDescriptions.TypeString.Substring("struct ".Length)){
+                            foreach(var submember in substructDefn.Members){
+                                var type = TransUtils.GetBoogieTypeFromSolidityTypeName(submember.TypeName);
+                                var mapType = new BoogieMapType(BoogieType.Ref, type);
+                                var mapName = member.Name + "_" + submember.Name + "_" + structDefn.CanonicalName;
+                                context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(mapName, mapType)));
+                            }
+                        }
+                    }
+                }else{
+                    var type = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
+                    var mapType = new BoogieMapType(BoogieType.Ref, type);
+                    var mapName = member.Name + "_" + structDefn.CanonicalName;
+                    context.Program.AddDeclaration(new BoogieGlobalVariable(new BoogieTypedIdent(mapName, mapType)));
+                }
             }
         }
 
