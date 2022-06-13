@@ -127,8 +127,8 @@ namespace SolToBoogie
         {
             foreach(var member in structDefn.Members)
             {
-                VeriSolAssert(!member.TypeDescriptions.IsStruct(),
-                    "Do no handle nested structs yet!");
+                // VeriSolAssert(!member.TypeDescriptions.IsStruct(),
+                //     "Do no handle nested structs yet!");
                 var type = TransUtils.GetBoogieTypeFromSolidityTypeName(member.TypeName);
                 var mapType = new BoogieMapType(BoogieType.Ref, type);
                 var mapName = member.Name + "_" + structDefn.CanonicalName;
